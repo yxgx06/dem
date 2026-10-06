@@ -1,0 +1,13 @@
+# Vehicle constants. Source: legacy/mission_proving_ground_rl.m, section 1 (lines 36-47).
+# Read by src/egga/config.py and src/egga/plant/bicycle.py.
+mass_kg: 1500.0
+yaw_inertia_kgm2: 3000.0
+lf_m: 1.2
+lr_m: 1.6
+cg_height_m: 0.5
+cf_n_per_rad: 80000.0
+cr_n_per_rad: 80000.0
+gravity_mps2: 9.81
+delta_max_rad: 0.5
+steer_rate_max_rps: 0.6
+min_tyre_force_cap_n: 100.0

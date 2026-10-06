@@ -1,0 +1,38 @@
+# Controller constants. Sources:
+#   pid, pd_ff:  legacy/mission_proving_ground_rl.m lines 175-184
+#   rl:          legacy/rl_adaptive_controller.m lines 49-94
+# Read by src/egga/controllers/*.py.
+
+pid:
+  kp: 0.80
+  ki: 0.05
+  kd: 0.05
+  khead: 1.00
+  integ_limit: 1.5          # anti-windup clamp on the integral of e_y
+
+pd_ff:                      # the repo calls this controller "MPC"
+  kp: 0.95
+  kd: 0.12
+  khead: 1.15
+  low_mu_threshold: 0.5     # below this belief, scale the command
+  low_mu_scale: 0.85
+
+rl:
+  integ_limit: 1.5
+  gain_bounds:              # hard clip on the actor outputs
+    kp: [0.4, 2.2]
+    ki: [0.01, 0.15]
+    kd: [0.02, 0.45]
+    khead: [0.6, 1.8]
+  friction_rule:            # applied when the friction belief is below mu_threshold
+    mu_threshold: 0.6
+    kd_gain: 1.2            # Kd *= 1 + kd_gain * (mu_threshold - mu)
+    ki_mu_ref: 0.85         # Ki *= mu / ki_mu_ref
+  slope_rule:               # applied when slope exceeds slope_threshold_deg
+    slope_threshold_deg: 2.0
+    kp_per_deg: 0.025       # Kp *= 1 + kp_per_deg * slope
+    khead_per_deg: 0.02     # Khead *= 1 + khead_per_deg * slope
+  observation:
+    slope_scale_deg: 10.0   # slope feature = slope_deg / slope_scale_deg
+    mu_offset: 0.55         # friction feature = (mu - mu_offset) / mu_scale
+    mu_scale: 0.35

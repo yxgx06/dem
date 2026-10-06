@@ -1,0 +1,44 @@
+# Mission profile. Source: legacy/mission_proving_ground_rl.m, sections 1-3 (lines 27-115).
+# Read by src/egga/scenarios/mission.py.
+dt_s: 0.01
+t_final_s: 75.0
+vx_mps: 10.0            # 36 km/h; the stress table overrides this to 12.0 for the ice-speed case
+
+# Stage boundaries in seconds. Stage k spans [bounds[k], bounds[k+1]).
+stage_bounds_s: [0.0, 15.0, 30.0, 45.0, 60.0, 75.0]
+
+stages:
+  flat_dry:        # Stage 1: 0-15 s
+    slope_deg: 0.0
+    mu: 0.85
+  uphill_dry:      # Stage 2: 15-30 s, slope relaxes to 10 deg with time constant tau
+    slope_max_deg: 10.0
+    slope_tau_s: 1.5
+    mu: 0.85
+  uphill_wet:      # Stage 3: 30-45 s, slope 10 deg, mu relaxes from 0.85 to 0.50
+    slope_deg: 10.0
+    mu_start: 0.85
+    mu_drop: 0.35
+    mu_tau_s: 1.5
+  downhill_ice:    # Stage 4: 45-60 s, slope ramps 10 -> -10 deg over ramp_s, mu 0.50 -> 0.25
+    slope_start_deg: 10.0
+    slope_end_deg: -10.0
+    slope_ramp_s: 3.0
+    mu_start: 0.50
+    mu_drop: 0.25
+    mu_tau_s: 1.5
+  lane_change:     # Stage 5: 60-75 s, slope ramps -10 -> 0 deg over 2 s, mu 0.25 -> 0.60 over 2 s
+    slope_start_deg: -10.0
+    slope_end_deg: 0.0
+    mu_start: 0.25
+    mu_end: 0.60
+    ramp_s: 2.0
+
+# Reference steering: a slow sine up to 60 s, then a double lane change.
+reference:
+  sine_amp_rad: 0.05
+  sine_period_s: 30.0
+  lc_start_s: 60.0
+  lc_amp_rad: 0.08
+  lc_period_s: 4.0
+  lc_segments_s: [2.5, 6.5, 10.5]   # sign flips at these lane-change-relative times

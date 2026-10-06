@@ -63,3 +63,6 @@ $RECYCLE.BIN/
 .idea/
 *.swp
 *.swo
+
+# Keep the (empty for now) codegen package despite the MATLAB codegen/ rule above
+!src/egga/codegen/

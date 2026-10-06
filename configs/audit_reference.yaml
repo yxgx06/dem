@@ -1,0 +1,16 @@
+# Numbers CLAIMED by the external audit (docs/source/Untitled (1).docx, section B) for its own
+# Python port (legacy/lib3.py). These are inputs to the discrepancy report, NOT results of this
+# repo. Max cross-track error in cm; "DIV" means the audit reported divergence.
+# Audit reported pid / pd_ff / rl (hand-typed weights). No trained-weights value was reported.
+source: "docs/source/Untitled (1).docx section B"
+tolerance_cm: 0.15
+cases:
+  nominal:                  {pid: 8.5,  pd_ff: 1.6,  rl_handtyped: 1.5}
+  mass_x1.3:                {pid: 9.8,  pd_ff: 0.8,  rl_handtyped: 0.8}
+  friction_belief_plus_0.3: {pid: 8.5,  pd_ff: 1.6,  rl_handtyped: 1.3}
+  delay_60ms:               {pid: 8.6,  pd_ff: 2.0,  rl_handtyped: 1.9}
+  delay_80ms:               {pid: 8.9,  pd_ff: 2.4,  rl_handtyped: DIV}
+  delay_100ms:              {pid: 11.6, pd_ff: 3.7,  rl_handtyped: DIV}
+  delay_120ms:              {pid: DIV,  pd_ff: DIV,  rl_handtyped: DIV}
+  noise_2cm:                {pid: DIV,  pd_ff: DIV,  rl_handtyped: DIV}
+  ice_speed_12mps:          {pid: DIV,  pd_ff: DIV,  rl_handtyped: DIV}

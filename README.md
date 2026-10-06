@@ -1,71 +1,44 @@
-# Reinforcement-Learning-Based Self-Tuning PID/MPC Controller
+# EGGA: Envelope-Guarded Gain Adaptation (research prototype)
 
-An autonomous vehicle control framework combining **Reinforcement Learning (RL)**, **Model Predictive Control (MPC)**, and **Self-Tuning PID** with a stability-preserving safety constraint layer for vehicle path tracking across complex, multi-terrain proving ground scenarios.
+Goal: let a learned steering-gain scheduler run safely when tyre-road friction and steering delay
+are known only as intervals, by keeping it inside a pre-verified envelope. The standing rules are
+in [CLAUDE.md](CLAUDE.md).
 
----
+## Status
 
-## 🚀 Key Highlights & Features
+Phase 0 of 10 (baseline repair). Nothing in this repo has been verified for stability, safety or
+production use. Wording about stability is limited to "verified under assumptions A1..An" once
+Phase 4 exists.
 
-- **Multi-Terrain Mission Simulation**: Evaluates vehicle dynamics across 5 continuous proving ground stages:
-  1. *Flat Road, Dry Asphalt* ($\theta=0^\circ, \mu=0.85$) - High-speed cruising
-  2. *Steep Uphill* ($\theta=+10^\circ, \mu=0.85$) - Rear load transfer
-  3. *Uphill with Rain* ($\theta=+10^\circ, \mu=0.50$) - Reduced adhesion S-curves
-  4. *Downhill on Black Ice* ($\theta=-10^\circ, \mu=0.25$) - High-slip downhill tracking
-  5. *Emergency Double Lane Change* ($\mu=0.60$) - Dynamic obstacle avoidance
-- **Safety-Constrained RL Layer**: Eliminates instability and state-boundary violations during reinforcement learning policy optimization.
-- **Multi-Controller Comparison**: Benchmarks Fixed PID vs. Model Predictive Control (MPC) vs. RL Adaptive Controller.
-- **Simulink Integration**: Native MATLAB/Simulink 2-DOF dynamic bicycle model integration.
+What exists now:
 
----
+- A Python port of the 75 s five-stage mission, the 2-DOF bicycle plant, and four named
+  controllers: `pid`, `pd_ff` (the legacy "MPC"), `rl_handtyped`, `rl_trained`.
+- A stress suite with logged results in `results/phase0/` and generated tables:
+  [docs/phase0_table.md](docs/phase0_table.md) and
+  [docs/phase0_discrepancies.md](docs/phase0_discrepancies.md).
+- A MATLAB cross-check (`matlab/crosscheck.m`) whose golden output is compared by the tests.
 
-## 📁 Repository Structure
+Every number is generated from logs; none is typed into this README. The original prototype is in
+[legacy/](legacy/README.md), including what each file really does.
 
-```
-.
-├── BicyclePathTracking1.slx                    # Simulink 2-DOF vehicle path tracking model
-├── exported_rl_weights.m                       # Exported trained RL actor network weights
-├── Figure_Lateral_Tracking_Benchmark.jpeg      # Multi-terrain tracking error benchmark plot
-├── Figure_Step_Response_Benchmark.png          # Step response and settling performance plot
-├── Figure_Training_Safety_Ablation.png         # Safety layer ablation & learning convergence plot
-├── generate_missing_benchmarks.py             # Python script for step response & ablation benchmarking
-├── master_bicycle_simulation.m                # Master bicycle simulation runner in MATLAB
-├── mission_proving_ground_rl.m                # 75-second automotive proving ground mission test
-├── rl_actor_checkpoint.pth                    # PyTorch RL actor neural network weights
-├── rl_adaptive_controller.m                   # MATLAB adaptive controller implementation
-├── RL_PID_Controller_Project.docx             # Project proposal & technical report document
-├── run_in_simulink.m                          # Simulink automation execution script
-└── train_rl_agent.py                          # PyTorch RL training script with safety constraints
+## Run
+
+```bash
+uv sync --extra dev
+uv run pytest -q                  # tests (plant analytics, determinism, MATLAB golden)
+uv run python -m egga.eval.stress # writes results/phase0/
+uv run python -m egga.eval.report # regenerates docs/phase0_*.md
 ```
 
----
+`make` targets mirror these (`make test`, `make reproduce`).
 
-## 🛠️ Usage Instructions
+## Known limits (Phase 0)
 
-### 1. MATLAB & Simulink
-1. Open MATLAB and navigate to the project directory.
-2. Run the multi-terrain proving ground benchmark:
-   ```matlab
-   mission_proving_ground_rl
-   ```
-3. To run the dynamic bicycle model simulation:
-   ```matlab
-   master_bicycle_simulation
-   ```
-4. To execute the Simulink model directly:
-   ```matlab
-   run_in_simulink
-   ```
-
-### 2. Python Reinforcement Learning & Benchmarking
-1. Install dependencies:
-   ```bash
-   pip install torch numpy matplotlib
-   ```
-2. Train the RL agent:
-   ```bash
-   python train_rl_agent.py
-   ```
-3. Generate benchmark plots:
-   ```bash
-   python generate_missing_benchmarks.py
-   ```
+- Plant: 2-DOF, linear tyres clipped at mu*Fz, constant speed, no actuator lag, no sensor model
+  beyond optional white noise on cross-track error.
+- Friction and slope are ground-truth inputs to the controllers; there is no estimator yet.
+- The "RL" scheduler is the original hand-typed or exported network plus hand rules; it is not
+  retrained here. Training is Phase 6.
+- Python vs MATLAB agreement is shown for the nominal mission only. MATLAB has no delay or noise
+  model, so those cases have no MATLAB reference.
