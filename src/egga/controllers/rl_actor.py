@@ -7,6 +7,7 @@ import numpy as np
 
 from egga.config import load_config
 from egga.controllers.base import Command, Observation, clip
+from egga.controllers.derivative import FilteredDerivative
 
 
 @dataclass(frozen=True)
@@ -46,8 +47,12 @@ class RLScheduler:
         dt: float,
         wheelbase: float,
         vx: float,
+        derivative_cutoff_hz: float | None = None,
     ) -> None:
         self.name = f"rl_{weights.name}"
+        self._deriv = (
+            FilteredDerivative(derivative_cutoff_hz, dt) if derivative_cutoff_hz else None
+        )
         self._weights = weights
         self._dt = dt
         self._wheelbase = wheelbase
@@ -71,12 +76,16 @@ class RLScheduler:
 
     def reset(self) -> None:
         self._integ = 0.0
+        if self._deriv:
+            self._deriv.reset()
 
     def command(self, obs: Observation) -> Command:
+        de_y = self._deriv.update(obs.e_y) if self._deriv else obs.de_y
+        vx = obs.vx if obs.vx > 0.0 else self._vx
         x = np.array(
             [
                 obs.e_y,
-                obs.de_y,
+                de_y,
                 obs.heading_error,
                 obs.yaw_rate - obs.yaw_rate_ref,
                 obs.slope_deg / self._slope_scale,
@@ -103,8 +112,8 @@ class RLScheduler:
         steer = (
             kp * obs.e_y
             + ki * self._integ
-            + kd * obs.de_y
+            + kd * de_y
             + khead * obs.heading_error
-            + (self._wheelbase / self._vx) * obs.yaw_rate_ref
+            + (self._wheelbase / vx) * obs.yaw_rate_ref
         )
         return Command(steer=float(steer), gains=(kp, ki, kd, khead))

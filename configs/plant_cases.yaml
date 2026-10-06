@@ -1,0 +1,47 @@
+# Named Phase 1 plant cases. Each is a deep-merge override of configs/plant.yaml.
+# Read by egga.eval.closed_loop.load_case. "linear_equiv" turns every extra effect off and uses the
+# Phase 0 tyre; it must reproduce the Phase 0 plant (tests/test_closed_loop.py).
+cases:
+  nominal: {}
+  linear_equiv:
+    tyre: {model: linear_clip}
+    load_transfer: {enabled: false, longitudinal: false}
+    controller: {derivative_cutoff_hz: null}
+  delay_80ms:
+    actuator: {delay_s: 0.080}
+  delay_jitter:
+    actuator: {delay_s: 0.060, jitter_s: 0.040}
+  actuator_lag_50ms:
+    actuator: {lag_tau_s: 0.050}
+  gain_loss_20pct:
+    actuator: {gain: 0.8}
+  steer_bias_1deg:
+    actuator: {bias_rad: 0.0175}
+  sensor_noise_2cm:
+    sensors:
+      lateral_error: {noise_std: 0.02}
+  sensor_dropout_5pct:
+    sensors:
+      lateral_error: {dropout_prob: 0.05}
+      yaw_rate: {dropout_prob: 0.05}
+  mass_x1.9:
+    mass: {mass_scale: 1.9}
+  stiffness_x0.7:
+    tyre: {stiffness_scale: 0.7}
+  crosswind_8mps:
+    crosswind: {speed_mps: 8.0}
+  friction_step_down:
+    friction:
+      profile: {type: step, t_s: 20.0, before: 0.85, after: 0.30}
+  friction_patches:
+    friction:
+      profile:
+        type: patches
+        default: 0.8
+        patches:
+          - {s0_m: 150.0, s1_m: 300.0, mu: 0.3}
+  split_mu:
+    friction:
+      split_mu: {enabled: true, left_factor: 1.0, right_factor: 0.4}
+  speed_ramp:
+    speed: {profile: ramp}

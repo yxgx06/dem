@@ -13,6 +13,7 @@ class Observation:
     yaw_rate_ref: float
     slope_deg: float
     mu_belief: float
+    vx: float = 0.0  # 0 -> controller falls back to its configured nominal speed
 
 
 @dataclass(frozen=True)

@@ -21,6 +21,7 @@ class Mission:
     psi_ref: np.ndarray
     x_ref: np.ndarray
     y_ref: np.ndarray
+    vx_t: np.ndarray
 
     @property
     def n(self) -> int:
@@ -84,17 +85,26 @@ def _reference_steer(cfg: dict[str, Any], t: np.ndarray) -> np.ndarray:
     return delta
 
 
-def build_mission(vx: float | None = None, cfg: dict[str, Any] | None = None) -> Mission:
+def build_mission(
+    vx: float | np.ndarray | None = None, cfg: dict[str, Any] | None = None
+) -> Mission:
+    """Build the mission. vx may be a constant or a per-sample speed profile (m/s)."""
     if cfg is None:
         cfg = load_config("mission.yaml")
     vehicle = load_config("vehicle.yaml")
-    speed = float(cfg["vx_mps"]) if vx is None else float(vx)
-    if speed <= 0.0:
-        raise ValueError("vx must be positive")
     dt = float(cfg["dt_s"])
     t_final = float(cfg["t_final_s"])
     t = np.arange(0.0, t_final + dt / 2.0, dt)
     n = t.shape[0]
+    if isinstance(vx, np.ndarray):
+        if vx.shape != (n,):
+            raise ValueError("speed profile must have one value per mission sample")
+        vx_t = vx.astype(float)
+    else:
+        vx_t = np.full(n, float(cfg["vx_mps"]) if vx is None else float(vx))
+    if np.any(vx_t <= 0.0):
+        raise ValueError("vx must be positive")
+    speed = float(vx_t[0])
     wheelbase = float(vehicle["lf_m"]) + float(vehicle["lr_m"])
 
     slope, mu = _stage_profiles(cfg, t)
@@ -105,11 +115,11 @@ def build_mission(vx: float | None = None, cfg: dict[str, Any] | None = None) ->
     psi_ref = np.zeros(n)
     r_ref = np.zeros(n)
     for k in range(1, n):
-        r_ref[k - 1] = speed / wheelbase * np.tan(delta_ref[k - 1])
+        r_ref[k - 1] = vx_t[k - 1] / wheelbase * np.tan(delta_ref[k - 1])
         psi_ref[k] = psi_ref[k - 1] + r_ref[k - 1] * dt
-        x_ref[k] = x_ref[k - 1] + speed * np.cos(psi_ref[k - 1]) * dt
-        y_ref[k] = y_ref[k - 1] + speed * np.sin(psi_ref[k - 1]) * dt
-    r_ref[n - 1] = speed / wheelbase * np.tan(delta_ref[n - 1])
+        x_ref[k] = x_ref[k - 1] + vx_t[k - 1] * np.cos(psi_ref[k - 1]) * dt
+        y_ref[k] = y_ref[k - 1] + vx_t[k - 1] * np.sin(psi_ref[k - 1]) * dt
+    r_ref[n - 1] = vx_t[n - 1] / wheelbase * np.tan(delta_ref[n - 1])
 
     return Mission(
         dt=dt,
@@ -123,4 +133,5 @@ def build_mission(vx: float | None = None, cfg: dict[str, Any] | None = None) ->
         psi_ref=psi_ref,
         x_ref=x_ref,
         y_ref=y_ref,
+        vx_t=vx_t,
     )

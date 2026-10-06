@@ -1,5 +1,10 @@
 # Progress
 
+## Phase 1 (plant fidelity): done
+- New plant: Pacejka per-wheel tyre, load transfer, variable speed, actuator (lag, fractional delay, jitter, gain, bias), sensors, friction profiles incl. split-mu, mass/stiffness scaling, crosswind; filtered derivative in every controller.
+- Gate 1: equivalence with Phase 0 exact; every effect has a test; `docs/phase1_report.md` generated (plant limits, case table, noise-filter sweep).
+- Finding: derivative filter alone does not fix 2 cm noise (D9).
+
 ## Done (Phase 0)
 - Repo restructured; original files in `legacy/` with a README of what each really does.
 - Python port: mission, plant, actuator, controllers (PID, PD+FF, RL with both weight sets).

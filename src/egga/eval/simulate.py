@@ -44,15 +44,24 @@ def _mission(vx: float) -> Mission:
     return build_mission(vx=vx)
 
 
-def make_controller(name: str, mission: Mission, dt: float) -> Controller:
+def make_controller(
+    name: str,
+    mission: Mission,
+    dt: float,
+    derivative_cutoff_hz: float | None = None,
+) -> Controller:
     ctrl_cfg = load_config("controllers.yaml")
     if name == "pid":
-        return PIDController(ctrl_cfg["pid"], dt)
+        return PIDController(ctrl_cfg["pid"], dt, derivative_cutoff_hz)
     if name == "pd_ff":
-        return PDFeedforwardController(ctrl_cfg["pd_ff"], mission.wheelbase, mission.vx)
+        return PDFeedforwardController(
+            ctrl_cfg["pd_ff"], mission.wheelbase, mission.vx, dt, derivative_cutoff_hz
+        )
     if name in ("rl_handtyped", "rl_trained"):
         weights = load_rl_weights(name.removeprefix("rl_"))
-        return RLScheduler(weights, ctrl_cfg["rl"], dt, mission.wheelbase, mission.vx)
+        return RLScheduler(
+            weights, ctrl_cfg["rl"], dt, mission.wheelbase, mission.vx, derivative_cutoff_hz
+        )
     raise KeyError(f"unknown controller: {name}")
 
 
