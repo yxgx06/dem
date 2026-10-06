@@ -1,10 +1,13 @@
-.PHONY: test lint stress report phase1 freeze-sets tune baselines matlab-golden check-lib3 reproduce
+.PHONY: test lint typecheck stress report phase1 freeze-sets tune baselines calibrate-estimators estimators matlab-golden check-lib3 reproduce
 
 test:
 	uv run pytest -q
 
 lint:
 	uv run ruff check src tests tools
+
+typecheck:
+	uv run mypy --strict src/egga/estimation
 
 stress:
 	uv run python -m egga.eval.stress
@@ -24,6 +27,12 @@ tune:
 baselines:
 	uv run python -m egga.eval.baselines
 
+calibrate-estimators:
+	uv run python -m egga.eval.estimation_eval --calibrate
+
+estimators:
+	uv run python -m egga.eval.estimation_eval
+
 matlab-golden:
 	cd matlab && matlab -batch "crosscheck('../results/phase0/matlab_golden.json')"
 
@@ -32,4 +41,4 @@ check-lib3:
 
 # Phase 0 reproduce: regenerates the stress logs and the generated tables (MATLAB golden is
 # regenerated separately with `make matlab-golden` because it needs a MATLAB licence).
-reproduce: stress report phase1 baselines test
+reproduce: stress report phase1 baselines estimators test

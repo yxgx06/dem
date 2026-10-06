@@ -1,5 +1,11 @@
 # Progress
 
+## Phase 3 (estimators with uncertainty): done
+- EKF for friction and mass (joint), delay bound by cross-correlation, `Estimate` interface, stale/invalid input gives widest bounds.
+- Calibrated on train only; evaluated on val with CIs and a conditions table: `docs/phase3_report.md`.
+- `mypy --strict` passes on `estimation/`; independence from the plant is test-enforced.
+- Known failures: mass interval under steering-sensor noise; friction unobservable at low excitation (D18).
+
 ## Phase 2 (honest baselines): done
 - B0 PID+FF, B1 PD+FF, B2 oracle RL, B6 OSQP MPC (Np=15, Nc=5), B7 LQR x3 (true mass, nominal mass, delay-augmented).
 - Scenario sets train/val/test frozen and hashed (`experiments/scenario_sets/`); test locked until Phase 7.

@@ -33,6 +33,7 @@ sensors:
   lateral_error:  {noise_std: 0.0, bias: 0.0, quant_step: 0.0, dropout_prob: 0.0, delay_steps: 0}
   yaw_rate:       {noise_std: 0.0, bias: 0.0, quant_step: 0.0, dropout_prob: 0.0, delay_steps: 0}
   steering_angle: {noise_std: 0.0, bias: 0.0, quant_step: 0.0, dropout_prob: 0.0, delay_steps: 0}
+  lateral_accel:  {noise_std: 0.0, bias: 0.0, quant_step: 0.0, dropout_prob: 0.0, delay_steps: 0}
 
 friction:                   # null -> use the mission's own mu array
   profile: null

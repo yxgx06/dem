@@ -47,6 +47,26 @@ def load_baselines() -> dict[str, Any]:
     return cfg
 
 
+_ESTIMATOR_OVERRIDE: dict[str, Any] | None = None
+_IGNORE_TUNED_ESTIMATORS = False
+
+
+def set_estimator_override(override: dict[str, Any] | None) -> None:
+    """Temporarily replace the calibrated estimator values (used only by calibration)."""
+    global _ESTIMATOR_OVERRIDE
+    _ESTIMATOR_OVERRIDE = override
+
+
+def load_estimators() -> dict[str, Any]:
+    """estimators.yaml with TRAIN-calibrated overrides from estimators_tuned.yaml (if present)."""
+    cfg = load_config("estimators.yaml")
+    if (CONFIG_DIR / "estimators_tuned.yaml").exists() and not _IGNORE_TUNED_ESTIMATORS:
+        cfg = _update(cfg, load_config("estimators_tuned.yaml"))
+    if _ESTIMATOR_OVERRIDE is not None:
+        cfg = _update(cfg, copy.deepcopy(_ESTIMATOR_OVERRIDE))
+    return cfg
+
+
 def config_hash(names: list[str]) -> str:
     digest = hashlib.sha256()
     for name in sorted(names):

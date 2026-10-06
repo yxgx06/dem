@@ -8,6 +8,8 @@ import numpy as np
 
 from egga.config import load_config
 from egga.controllers.base import Observation
+from egga.estimation.suite import EstimatorSuite
+from egga.estimation.types import Measurements
 from egga.eval.simulate import make_controller
 from egga.plant.actuator import SteeringActuator
 from egga.plant.friction import FrictionProfile
@@ -78,6 +80,8 @@ class ClosedLoopResult:
     solve_times: np.ndarray = field(default_factory=lambda: np.zeros(0))
     yaw_rate_ref: np.ndarray = field(default_factory=lambda: np.zeros(0))
     sideslip: np.ndarray = field(default_factory=lambda: np.zeros(0))
+    estimates: dict[str, np.ndarray] = field(default_factory=dict)
+    truth: dict[str, float] = field(default_factory=dict)
 
 
 def _wrap(angle: float) -> float:
@@ -92,6 +96,8 @@ def run_closed_loop(
     divergence_threshold_m: float | None = None,
     mission: Mission | None = None,
     mission_cfg: dict[str, Any] | None = None,
+    estimator: EstimatorSuite | None = None,
+    mu_source: str = "oracle",
 ) -> ClosedLoopResult:
     cfg = plant_cfg if plant_cfg is not None else load_plant_config()
     vehicle_cfg = load_config("vehicle.yaml")
@@ -129,7 +135,18 @@ def run_closed_loop(
         "lateral_error": Sensor(cfg["sensors"]["lateral_error"], rngs[1]),
         "yaw_rate": Sensor(cfg["sensors"]["yaw_rate"], rngs[2]),
         "steering_angle": Sensor(cfg["sensors"]["steering_angle"], rngs[3]),
+        "lateral_accel": Sensor(cfg["sensors"]["lateral_accel"], rngs[4]),
     }
+    if mu_source not in ("oracle", "estimate_safe"):
+        raise ValueError(f"unknown mu_source: {mu_source}")
+    if mu_source == "estimate_safe" and estimator is None:
+        raise ValueError("mu_source='estimate_safe' needs an estimator")
+    if estimator is not None:
+        estimator.reset()
+    est_names = ("mu_lo", "mu_hi", "tau_bar", "mass_lo", "mass_hi", "quality", "ok")
+    est_log = {k: np.full(n, np.nan) for k in est_names}
+    last_estimate = estimator.widest(0.0, "stale") if estimator is not None else None
+    ay_prev = 0.0
     friction_cfg = cfg["friction"]
     if friction_cfg["profile"] is None:
         friction = FrictionProfile.from_array(mission.mu, dt)
@@ -179,13 +196,22 @@ def run_closed_loop(
 
             m_ey = sensors["lateral_error"].measure(e_true)
             m_r = sensors["yaw_rate"].measure(vehicle.r)
-            sensors["steering_angle"].measure(actuator.angle)
+            m_st = sensors["steering_angle"].measure(actuator.angle)
+            m_ay = sensors["lateral_accel"].measure(ay_prev)
             valid += int(m_ey.valid) + int(m_r.valid)
             total += 2
 
             mu_l, mu_r = friction.mu_wheels(t_k, path_s)
             mu_true = friction.mu(t_k, path_s)
             belief = float(np.clip(mu_true + mu_belief_error, MU_BELIEF_FLOOR, MU_BELIEF_CEIL))
+            if mu_source == "estimate_safe" and estimator is not None and last_estimate is not None:
+                belief = float(
+                    np.clip(
+                        last_estimate.mu_safe(estimator.k_safe, estimator.mu_min),
+                        MU_BELIEF_FLOOR,
+                        MU_BELIEF_CEIL,
+                    )
+                )
             de_fd = (m_ey.value - e_prev) / dt if k > 0 else 0.0
             e_prev = m_ey.value
             preview: tuple[float, ...] = ()
@@ -206,6 +232,30 @@ def run_closed_loop(
             cmd = controller.command(obs)
             if cmd.solve_time_s > 0.0:
                 solve_times.append(cmd.solve_time_s)
+            if estimator is not None:
+                last_estimate = estimator.update(
+                    Measurements(
+                        t=t_k,
+                        vx=float(vx_t[k]),
+                        yaw_rate=m_r.value,
+                        yaw_rate_valid=m_r.valid,
+                        lateral_accel=m_ay.value,
+                        lateral_accel_valid=m_ay.valid,
+                        steer_meas=m_st.value,
+                        steer_meas_valid=m_st.valid,
+                        steer_cmd=cmd.steer,
+                    )
+                )
+                for key, val in (
+                    ("mu_lo", last_estimate.mu_lo),
+                    ("mu_hi", last_estimate.mu_hi),
+                    ("tau_bar", last_estimate.tau_bar),
+                    ("mass_lo", last_estimate.mass_lo),
+                    ("mass_hi", last_estimate.mass_hi),
+                    ("quality", last_estimate.quality),
+                    ("ok", 1.0 if last_estimate.status == "ok" else 0.0),
+                ):
+                    est_log[key][k] = val
             delta = actuator.step(cmd.steer)
             out = vehicle.step(
                 delta,
@@ -218,6 +268,7 @@ def run_closed_loop(
                 t_k,
             )
             path_s += float(vx_t[k]) * dt
+            ay_prev = out.ay
 
             log["ey"][k] = e_true
             log["yaw_rate"][k] = vehicle.r
@@ -232,7 +283,7 @@ def run_closed_loop(
             gains[k] = cmd.gains
 
     if diverged_at is None:
-        for arr in log.values():
+        for arr in (*log.values(), *est_log.values()):
             arr[n - 1] = arr[n - 2]
         gains[n - 1] = gains[n - 2]
 
@@ -253,4 +304,11 @@ def run_closed_loop(
         solve_times=np.asarray(solve_times),
         yaw_rate_ref=log["r_ref"],
         sideslip=log["beta"],
+        estimates=est_log if estimator is not None else {},
+        truth={
+            "mass_scale": float(cfg["mass"]["mass_scale"]),
+            "latency_s": float(cfg["actuator"]["delay_s"])
+            + 0.5 * float(cfg["actuator"]["jitter_s"])
+            + float(cfg["actuator"]["lag_tau_s"]),
+        },
     )

@@ -94,3 +94,43 @@ B6 runs the QP every 0.05 s (Np=15, Nc=5, horizon 0.75 s) and holds in between; 
 MPC used 0.01 s, a 0.15 s horizon. It receives a preview of the reference yaw rate (planner output)
 and uses the design mass; delay, lag and tyre nonlinearity are unmodelled. Solve times are HOST
 Python+OSQP wall time, not ECU numbers.
+
+## D15. Estimators see only `Measurements`; independence is enforced by tests
+`egga.estimation` has its own tanh tyre model (the plant uses Pacejka) and nominal datasheet
+vehicle parameters. `tests/test_estimation.py` AST-scans the package and fails on any import of
+`egga.plant`, `egga.scenarios`, `egga.eval` or `egga.controllers`, and checks `Measurements` has no
+truth fields. Only `OracleEstimator` takes truth and carries `label = "oracle"`.
+
+## D16. Friction and mass are estimated jointly (EKF state includes nominal mass / mass)
+A friction EKF that assumed the nominal mass read a heavy vehicle as a slippery one (strong
+under-estimate of mu and poor coverage on train); giving it the true mass removed the bias, which
+identified mass as the confound. The fix is a fourth EKF state, theta = nominal mass / mass, so both
+get honest intervals. A first mass estimator based on the quasi-steady understeer regression had
+poor coverage (the mass effect on steady yaw gain is only a few percent at these speeds) and was
+removed rather than kept as dead code.
+
+## D17. Calibration is train-only and reports the cost of coverage
+`python -m egga.eval.estimation_eval --calibrate` grid-searches the friction interval width (z, mu
+random-walk intensity) and the mass interval (z_mass, theta random-walk intensity) on the TRAIN set,
+choosing the narrowest setting whose run-level coverage reaches 0.95. The hash of the train set is in
+`configs/estimators_tuned.yaml` (tested). The result is wide friction intervals: friction is only
+weakly observable unless the tyres are driven near the limit, and `docs/phase3_report.md` shows
+the interval is at or near the prior width when excitation is low. Coverage is therefore bought
+with width, and the report states both.
+
+## D18. Known failure conditions (see docs/phase3_report.md for the numbers)
+- Steering-sensor noise biases the mass interval (errors-in-variables: the filter treats the noisy
+  steering as exact input). A low-pass on the measured steering was tried and rejected: it improved the
+  noisy case but badly hurt the clean case through lag bias. The mass interval is therefore NOT trusted
+  under steering noise, and the supervisor must not rely on it unless that is addressed.
+- Friction is unobservable at low tyre utilisation and while driving straight; a friction drop in
+  that situation is only detected once the tyres are excited (long latency in the report).
+- The delay bound (cross-correlation of command vs measured steering) relaxes linearly to the
+  prior after excitation is lost, so it is conservative but never holds a stale value.
+
+## D19. Staleness and invalid-input semantics
+NaN/inf, a non-positive speed or time going backwards returns the widest bounds immediately and
+re-initialises the filters. A measurement gap longer than `staleness.max_gap_s` (0.1 s) does the same
+(status `stale`). Shorter gaps propagate the model with growing uncertainty; the last good value is
+never returned. During short steering dropouts the last valid steering measurement drives the model.
+Steering-sensor noise (an assumed datasheet value) is propagated as input noise into the EKF.

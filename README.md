@@ -6,7 +6,7 @@ in [CLAUDE.md](CLAUDE.md).
 
 ## Status
 
-Phases 0-2 of 10 done (baseline repair, plant fidelity, honest baselines). Nothing in this repo has been verified for stability, safety or
+Phases 0-3 of 10 done (baseline repair, plant fidelity, honest baselines, estimators). Nothing in this repo has been verified for stability, safety or
 production use. Wording about stability is limited to "verified under assumptions A1..An" once
 Phase 4 exists.
 
@@ -18,7 +18,8 @@ What exists now:
   [docs/phase0_table.md](docs/phase0_table.md) and
   [docs/phase0_discrepancies.md](docs/phase0_discrepancies.md), and the Phase 1 plant report
   [docs/phase1_report.md](docs/phase1_report.md), and the Phase 2 baselines
-  [docs/phase2_report.md](docs/phase2_report.md).
+  [docs/phase2_report.md](docs/phase2_report.md), and the Phase 3 estimators
+  [docs/phase3_report.md](docs/phase3_report.md).
 - A MATLAB cross-check (`matlab/crosscheck.m`) whose golden output is compared by the tests.
 
 Every number is generated from logs; none is typed into this README. The original prototype is in
