@@ -14,3 +14,12 @@ cases:
   delay_120ms:              {pid: DIV,  pd_ff: DIV,  rl_handtyped: DIV}
   noise_2cm:                {pid: DIV,  pd_ff: DIV,  rl_handtyped: DIV}
   ice_speed_12mps:          {pid: DIV,  pd_ff: DIV,  rl_handtyped: DIV}
+
+# LQR claims from the audit (docs/source/Untitled (1).docx, opportunity text): beat the original RL
+# at nominal (0.87 cm), degrade to 3.0 cm at mass x1.3 and 8.8 cm at x1.9 when designed for nominal
+# mass, and hold up to 200 ms of delay. The delay entry is "survives" (no divergence), in cm: null.
+lqr:
+  nominal: 0.87
+  mass_x1.3_nominal_design: 3.0
+  mass_x1.9_nominal_design: 8.8
+  delay_200ms: null

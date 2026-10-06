@@ -1,0 +1,9 @@
+{
+ "generator_version": 1,
+ "hashes": {
+  "train": "6edf94778482f10962500231d19ecd4e37ca82dc16b6f1db0647dcd47c8f65f3",
+  "val": "784284696d2fed0337d6e2747a7fdd79d79bc0d294f9aa3e98e2d616ab093045",
+  "test": "3ef264c5954f72477e68d5b8357134a5e37aeef3921abef6fee52273b1e27aac"
+ },
+ "note": "test set is locked until Phase 7; load it only with unlock_test=True"
+}

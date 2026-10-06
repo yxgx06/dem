@@ -1,4 +1,4 @@
-.PHONY: test lint stress report phase1 matlab-golden check-lib3 reproduce
+.PHONY: test lint stress report phase1 freeze-sets tune baselines matlab-golden check-lib3 reproduce
 
 test:
 	uv run pytest -q
@@ -15,6 +15,15 @@ report:
 phase1:
 	uv run python -m egga.eval.phase1
 
+freeze-sets:
+	uv run python -c "from egga.scenarios.sets import freeze; print(freeze())"
+
+tune:
+	uv run python -m egga.eval.tuning
+
+baselines:
+	uv run python -m egga.eval.baselines
+
 matlab-golden:
 	cd matlab && matlab -batch "crosscheck('../results/phase0/matlab_golden.json')"
 
@@ -23,4 +32,4 @@ check-lib3:
 
 # Phase 0 reproduce: regenerates the stress logs and the generated tables (MATLAB golden is
 # regenerated separately with `make matlab-golden` because it needs a MATLAB licence).
-reproduce: stress report phase1 test
+reproduce: stress report phase1 baselines test

@@ -2,12 +2,19 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 from functools import lru_cache
+from typing import Any
 
 import numpy as np
 
-from egga.config import load_config
+from egga.config import load_baselines, load_config
 from egga.controllers.base import Controller, Observation
-from egga.controllers.classical import PDFeedforwardController, PIDController
+from egga.controllers.classical import (
+    PDFeedforwardController,
+    PIDController,
+    PIDFeedforwardController,
+)
+from egga.controllers.lqr import DesignVehicle, LQRController
+from egga.controllers.mpc import MPCController
 from egga.controllers.rl_actor import RLScheduler, load_rl_weights
 from egga.plant.actuator import TransportDelay, steer_actuator
 from egga.plant.bicycle import BicyclePlant, VehicleParams
@@ -49,8 +56,20 @@ def make_controller(
     mission: Mission,
     dt: float,
     derivative_cutoff_hz: float | None = None,
+    mass_scale: float = 1.0,
+    inertia_follows_mass: bool | None = None,
 ) -> Controller:
+    """Build a named controller.
+
+    Legacy: pid, pd_ff, rl_handtyped, rl_trained. Phase 2 baselines: b0_pid_ff, b1_pd_ff,
+    b2_rl_oracle, b6_mpc, b7_lqr_true_mass, b7_lqr_nominal_mass, b7_lqr_delay_aug. mass_scale is
+    the mass the design is allowed to know (true-mass variants); nominal-mass variants ignore it.
+    """
     ctrl_cfg = load_config("controllers.yaml")
+    if name.startswith(("b0_", "b1_", "b6_", "b7_", "b2_")):
+        return _make_baseline(
+            name, mission, dt, derivative_cutoff_hz, mass_scale, inertia_follows_mass, ctrl_cfg
+        )
     if name == "pid":
         return PIDController(ctrl_cfg["pid"], dt, derivative_cutoff_hz)
     if name == "pd_ff":
@@ -62,6 +81,51 @@ def make_controller(
         return RLScheduler(
             weights, ctrl_cfg["rl"], dt, mission.wheelbase, mission.vx, derivative_cutoff_hz
         )
+    raise KeyError(f"unknown controller: {name}")
+
+
+def _make_baseline(
+    name: str,
+    mission: Mission,
+    dt: float,
+    cutoff: float | None,
+    mass_scale: float,
+    inertia_follows_mass: bool | None,
+    ctrl_cfg: dict[str, Any],
+) -> Controller:
+    base = load_baselines()
+    vehicle = load_config("vehicle.yaml")
+    if name == "b0_pid_ff":
+        return PIDFeedforwardController(base["pid_ff"], dt, mission.wheelbase, mission.vx, cutoff)
+    if name == "b1_pd_ff":
+        return PDFeedforwardController(base["pd_ff"], mission.wheelbase, mission.vx, dt, cutoff)
+    if name == "b2_rl_oracle":
+        weights = load_rl_weights("handtyped")
+        return RLScheduler(weights, ctrl_cfg["rl"], dt, mission.wheelbase, mission.vx, cutoff)
+    lqr_cfg = base["lqr"]
+    follows = bool(lqr_cfg["inertia_follows_mass"]) if inertia_follows_mass is None else (
+        inertia_follows_mass
+    )
+    if name == "b6_mpc":
+        design = DesignVehicle.from_config(vehicle, mass_scale, follows)
+        return MPCController(
+            design,
+            base["mpc"],
+            dt,
+            float(vehicle["delta_max_rad"]),
+            float(vehicle["steer_rate_max_rps"]),
+            cutoff,
+            mission.vx,
+        )
+    variants = {
+        "b7_lqr_true_mass": (mass_scale, 0.0),
+        "b7_lqr_nominal_mass": (1.0, 0.0),
+        "b7_lqr_delay_aug": (mass_scale, float(lqr_cfg["delay_design_s"])),
+    }
+    if name in variants:
+        scale, delay = variants[name]
+        design = DesignVehicle.from_config(vehicle, scale, follows)
+        return LQRController(name, design, lqr_cfg, dt, cutoff, delay, mission.vx)
     raise KeyError(f"unknown controller: {name}")
 
 
@@ -86,7 +150,13 @@ def run_mission(
         y0=float(mission.y_ref[0]),
         psi0=float(mission.psi_ref[0]),
     )
-    controller = make_controller(controller_name, mission, mission.dt)
+    controller = make_controller(
+        controller_name,
+        mission,
+        mission.dt,
+        mass_scale=scenario.mass_scale,
+        inertia_follows_mass=False,  # the Phase 0 plant keeps yaw inertia fixed
+    )
     controller.reset()
     delay = TransportDelay(round(scenario.delay_s / mission.dt))
     rng = np.random.default_rng(scenario.seed)

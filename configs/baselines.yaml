@@ -1,0 +1,57 @@
+# Phase 2 baseline definitions and TUNING SEARCH SPACES. Initial values are the pre-tuning
+# starting points; tuned values (fitted on the TRAIN scenario set only) are written by
+# `python -m egga.eval.tuning` to configs/baselines_tuned.yaml and override these.
+# Read by egga.controllers.factory (via egga.eval.simulate.make_controller).
+
+# B0: fixed PID with heading term and curvature feedforward (the Phase 0 PID plus feedforward).
+pid_ff:
+  kp: 0.80
+  ki: 0.05
+  kd: 0.05
+  khead: 1.00
+  integ_limit: 1.5
+
+# B1: PD with heading term and curvature feedforward (the legacy "MPC").
+pd_ff:
+  kp: 0.95
+  kd: 0.12
+  khead: 1.15
+  low_mu_threshold: 0.5
+  low_mu_scale: 0.85
+
+# B7: Apollo-style speed-scheduled LQR on the 4-state lateral error model
+# [lateral error, its rate, heading error, its rate]. Q is a diagonal per design speed (linear
+# interpolation in speed). Initial Q/R are the audit's (legacy/lib3.py QW, RW).
+lqr:
+  design_speed_min_mps: 4.0
+  design_speed_max_mps: 20.0
+  design_speed_step_mps: 0.5
+  q_speeds_mps: [5.0, 10.0, 20.0]
+  q_diag:
+    - [0.05, 0.0, 1.0, 0.0]
+    - [0.05, 0.0, 1.0, 0.0]
+    - [0.05, 0.0, 1.0, 0.0]
+  r: 1.0
+  delay_design_s: 0.10        # delay bound used by the delay-augmented variant only
+  ay_limit_fraction: 0.85     # steering is limited to the angle for a_y,max = fraction * mu * g
+  inertia_follows_mass: true  # design inertia scales with the mass scale (Phase 1 plant)
+
+# B6: condensed linear MPC solved with OSQP.
+mpc:
+  np: 15
+  nc: 5
+  ts_s: 0.05                  # MPC sample time; the QP is solved every ts_s and held in between
+  q_lat: 15.0
+  q_head: 25.0
+  r_u: 2.0
+  r_du: 5.0
+  ay_limit_fraction: 0.85
+  rebuild_speed_delta_mps: 0.25
+  osqp: {eps_abs: 1.0e-5, eps_rel: 1.0e-5, max_iter: 400}
+
+# Tuning search spaces: multiplicative factors applied to the initial values above.
+tuning:
+  budget_evals: 40
+  scenarios_per_eval: 12
+  factor_min: 0.25
+  factor_max: 4.0

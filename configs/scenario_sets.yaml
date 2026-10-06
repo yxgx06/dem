@@ -1,0 +1,32 @@
+# Frozen train / val / test scenario sets (Phase 2). Read by egga.scenarios.sets.
+# Disjointness: every scenario parameter is drawn from a range cut into `slices` equal slices;
+# each set may only use its own slice indices, so no two sets share a parameter value. Road
+# geometry is derived from (speed, mu_min, demand_ratio), so geometries are disjoint as well.
+# Seeds: each set has its own base seed block. The test set is locked until Phase 7.
+version: 1
+duration_s: 30.0
+slices: 12
+sets:
+  train: {slice_indices: [0, 1, 3, 4, 6, 7, 9, 10], n: 48, base_seed: 1000}
+  val:   {slice_indices: [2, 8],                    n: 24, base_seed: 2000}
+  test:  {slice_indices: [5, 11],                   n: 48, base_seed: 3000}
+families: [constant, step, ramp, patches]
+ranges:
+  speed_mps: [8.0, 12.0]
+  demand_ratio: [0.3, 0.85]      # peak required a_y over (mu_min * g); the plant peaks near 0.9 mu g
+  mu_low: [0.25, 0.70]
+  mu_high: [0.70, 0.95]
+  mu_level: [0.25, 0.95]         # constant-profile friction
+  mass_scale: [1.0, 1.5]
+  delay_s: [0.0, 0.06]
+  noise_std_m: [0.0, 0.004]
+  mu_belief_error: [-0.2, 0.2]
+  sine_period_s: [8.0, 20.0]
+  step_time_s: [4.0, 14.0]
+  patch_start_m: [40.0, 160.0]
+  patch_len_m: [40.0, 120.0]
+geometry:
+  lc_target_start_s: 12.0        # lane change starts near this time (aligned to the sine zero)
+  max_lc_amp_rad: 0.15
+  sine_to_lc_ratio: 0.2
+  ramp_duration_s: 6.0

@@ -42,6 +42,31 @@ class PIDController:
         return Command(steer=steer, gains=(self._kp, self._ki, self._kd, self._khead))
 
 
+class PIDFeedforwardController(PIDController):
+    """B0: the Phase 0 PID plus curvature feedforward (L / vx) * yaw_rate_ref."""
+
+    name = "b0_pid_ff"
+
+    def __init__(
+        self,
+        cfg: dict[str, Any],
+        dt: float,
+        wheelbase: float,
+        vx: float,
+        derivative_cutoff_hz: float | None = None,
+    ) -> None:
+        super().__init__(cfg, dt, derivative_cutoff_hz)
+        self._wheelbase = wheelbase
+        self._vx = vx
+
+    def command(self, obs: Observation) -> Command:
+        base = super().command(obs)
+        vx = obs.vx if obs.vx > 0.0 else self._vx
+        return Command(
+            steer=base.steer + (self._wheelbase / vx) * obs.yaw_rate_ref, gains=base.gains
+        )
+
+
 class PDFeedforwardController:
     """Fixed PD with heading term and curvature feedforward; the repo calls it "MPC".
 
