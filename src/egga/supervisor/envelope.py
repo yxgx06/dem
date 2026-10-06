@@ -154,9 +154,7 @@ class Envelope:
             total += ((float(axis[index[dim]]) - target[dim]) / span) ** 2
         return total
 
-    def project_index(
-        self, mask: BoolArray, target: Gain
-    ) -> tuple[int, int, int, int] | None:
+    def project_index(self, mask: BoolArray, target: Gain) -> tuple[int, int, int, int] | None:
         """Index of the nearest verified candidate gain (normalised distance), or None if empty."""
         best: tuple[float, tuple[int, int, int, int]] | None = None
         for row in np.argwhere(mask):

@@ -1,0 +1,47 @@
+# Phase 5 runtime supervisor ("envelope_guard" layer). Read by egga.supervisor.types.Config.
+# All thresholds are engineering choices, not derived constants; none was tuned on the test set.
+timing:
+  dt_s: 0.01
+  gain_hop_period_s: 0.1     # at most one verified-grid hop per period (gain-rate limiter)
+  min_dwell_s: 2.0           # minimum time between non-escalating mode changes (anti-chatter)
+  recover_s: 5.0             # continuous healthy time needed to leave FALLBACK
+  stale_grace_s: 0.3         # estimator stale/invalid for this long -> hard fault
+
+domain:                      # operating-domain assumptions
+  mu_floor: 0.2              # the supervisor assumes mu >= this unless the estimator shows less
+  tau_prior_s: 0.15
+  mass_prior_max: 1.9
+  tau_fallback_s: 0.10       # FALLBACK queries the envelope with at least these bounds
+  mass_fallback: 1.9
+
+modes:
+  tau_degraded_enter_s: 0.08
+  tau_degraded_exit_s: 0.06
+  mu_low_enter: 0.40         # compared with the interval's UPPER bound (evidence of low friction)
+  mu_low_exit: 0.50
+  quality_enter: 0.05
+  quality_exit: 0.15
+  # NOMINAL, CAUTIOUS, LOW_MU, DEGRADED_ACTUATOR, FALLBACK, MINIMAL_RISK
+  speed_scale: [1.0, 0.9, 0.8, 0.7, 0.6, 0.5]
+
+health:
+  yaw_lpf_tau_s: 0.25
+  yaw_abs: 0.06              # yaw-rate residual threshold: abs + rel * |predicted|
+  yaw_rel: 0.30
+  yaw_persist_s: 0.6
+  yaw_min_speed_mps: 3.0
+  actuator_abs_rad: 0.03     # measured steering outside the recent command range by more than this
+  actuator_persist_s: 0.4
+  saturation_level: 0.98     # command magnitude relative to the steering limit
+  saturation_persist_s: 1.5
+  rl_rate_per_s: [2.0, 0.5, 2.0, 2.0]   # largest accepted gain change per second [Kp, Ki, Kd, Khead]
+  rl_persist_rejects: 20     # consecutive rejected proposals before RL is ignored
+
+guard:
+  lane_margin_m: 1.0         # lateral margin used by the delay-bound deviation check
+  margin_speed_scale: 0.8    # speed factor while the lateral-margin check fails
+  min_speed_for_limit_mps: 3.0
+
+speed:
+  decel_mps2: 3.0
+  accel_mps2: 1.0
