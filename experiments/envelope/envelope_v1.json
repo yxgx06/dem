@@ -1,0 +1,169 @@
+{
+ "analysis": {
+  "damping_check_radius": 0.9,
+  "delay_margin_factor": 1.2,
+  "delay_margin_min_extra_steps": 2,
+  "fast_rho_max": 0.985,
+  "min_damping": 0.15,
+  "stability_margin": 0.0001,
+  "stiffness_scales": [
+   0.5,
+   1.0
+  ]
+ },
+ "array_keys": [
+  "speed_axis",
+  "mu_axis",
+  "tau_axis",
+  "mass_axis",
+  "kp_axis",
+  "ki_axis",
+  "kd_axis",
+  "khead_axis",
+  "verified",
+  "linear_accepted",
+  "rho_fast",
+  "reference_gain",
+  "ay_max",
+  "rate_limit",
+  "params"
+ ],
+ "assumptions": {
+  "A1": "The 2-DOF bicycle with linear tyres describes the plant while tyre utilisation stays below ay_fraction_k.",
+  "A10": "The road is flat with uniform friction; no crosswind, no split-mu, no camber.",
+  "A11": "The controller is the PID with heading term and curvature feedforward at 100 Hz with the stated derivative filter; the feedforward does not affect stability.",
+  "A12": "Nonlinear confirmation is a sample (tests_per_cell gains per cell: aggressive extremes plus seeded random) of one lane change at the demand limits (a_y,max and the jerk limit) with true delay equal to tau_bar and friction equal to mu_lo; untested accepted gains rely on the linear analysis and other manoeuvres are not covered.",
+  "A2": "The true friction coefficient is at least mu_lo (the supervisor passes a conservative lower bound).",
+  "A3": "The total steering latency (transport plus actuator lag) is at most tau_bar and constant; jitter stays inside the bound.",
+  "A4": "The vehicle mass scale is at most mass_scale of the cell (yaw inertia scales with mass).",
+  "A5": "Speed is constant within the cell (frozen parameter); speed changes are slow compared with the closed-loop dynamics.",
+  "A6": "Effective cornering stiffness lies between the lower stiffness corner and 1.0 times nominal (covers tyre saturation up to utilisation k, load transfer and load sensitivity).",
+  "A7": "Sensors are unbiased with noise small enough for the 5 Hz derivative filter to keep the loop linear; no sensor dropout or bias.",
+  "A8": "Steering rate and angle limits do not bind during the verified small-signal behaviour; large manoeuvres are limited by the demand limits.",
+  "A9": "The result is frozen-parameter, frozen-gain: stability while parameters or gains change is NOT covered by the analysis."
+ },
+ "config_hash": "0c41e46e1f6de1eb",
+ "counts": {
+  "candidate_gains": 1176,
+  "cells": 800,
+  "cells_with_linear_set": 430,
+  "cells_with_verified_set": 406,
+  "mean_verified_gains_per_cell": 134.9225,
+  "nonlinear_by_pick_type": {
+   "best_margin": {
+    "failures": 54,
+    "tests": 405
+   },
+   "max_kd": {
+    "failures": 8,
+    "tests": 80
+   },
+   "max_khead": {
+    "failures": 47,
+    "tests": 160
+   },
+   "max_kp": {
+    "failures": 61,
+    "tests": 415
+   },
+   "nominal": {
+    "failures": 67,
+    "tests": 430
+   },
+   "random": {
+    "failures": 263,
+    "tests": 2566
+   }
+  },
+  "nonlinear_failures": 500,
+  "nonlinear_tests": 4056
+ },
+ "gains": {
+  "kd": [
+   0.02,
+   0.07,
+   0.15,
+   0.25,
+   0.35,
+   0.45
+  ],
+  "khead": [
+   0.6,
+   0.8,
+   1.0,
+   1.2,
+   1.4,
+   1.6,
+   1.8
+  ],
+  "ki": [
+   0.01,
+   0.05,
+   0.1,
+   0.15
+  ],
+  "kp": [
+   0.4,
+   0.7,
+   1.0,
+   1.3,
+   1.6,
+   1.9,
+   2.2
+  ]
+ },
+ "git_dirty": true,
+ "git_sha": "34bc75957c5a88241de4cf0b0bb8ba0ebd279d73",
+ "grid": {
+  "mass_scale": [
+   1.0,
+   1.3,
+   1.6,
+   1.9
+  ],
+  "mu_lo": [
+   0.2,
+   0.35,
+   0.5,
+   0.7,
+   0.9
+  ],
+  "speed_mps": [
+   5.0,
+   7.5,
+   10.0,
+   12.5,
+   15.0
+  ],
+  "tau_bar_s": [
+   0.0,
+   0.02,
+   0.04,
+   0.06,
+   0.08,
+   0.1,
+   0.12,
+   0.15
+  ]
+ },
+ "hash": "47f395e68b895ac003de72a9f064f567ae8aa4661bd46574c893e7432d2de6f9",
+ "limits": {
+  "ay_fraction_k": 0.6,
+  "jerk_max_mps3": 8.0,
+  "min_feasible_speed_mps": 5.0,
+  "steer_angle_max_rad": 0.5,
+  "steer_rate_hw_max_rps": 0.6
+ },
+ "nonlinear": {
+  "lc_period_s": 2.0,
+  "lc_start_s": 1.0,
+  "max_abs_ey_m": 0.8,
+  "max_lc_amp_rad": 0.15,
+  "seed": 0,
+  "settle_abs_ey_m": 0.1,
+  "settle_window_s": 1.0,
+  "tail_s": 2.0,
+  "tests_per_cell": 12
+ },
+ "version": 1
+}

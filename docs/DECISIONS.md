@@ -134,3 +134,37 @@ re-initialises the filters. A measurement gap longer than `staleness.max_gap_s` 
 (status `stale`). Shorter gaps propagate the model with growing uncertainty; the last good value is
 never returned. During short steering dropouts the last valid steering measurement drives the model.
 Steering-sensor noise (an assumed datasheet value) is propagated as input noise into the EKF.
+
+## D20. Envelope criteria: the example spectral-radius bound is not usable with an integrator
+With integral action at 100 Hz the integrator pole sits within about 1e-3 of the unit circle for every
+usable gain, so a plain spectral radius of 0.97 would reject everything. The envelope instead requires
+strict stability (all poles within 1 - 1e-4), decay of the non-integrator modes (<= 0.985, a settling
+time of a few seconds), damping >= 0.15 for complex poles, and stability at 1.2x the delay bound. The
+thresholds are a-priori engineering choices (`configs/envelope.yaml`), and were NOT loosened to fill
+cells: at the nominal cell they leave no verified gain for delay bounds of 80 ms and above at
+10 m/s, where fast-mode decay and damping, not stability, are binding. The degraded-mode answer is a
+lower speed (`Envelope.max_verified_speed`) combined with the friction speed cap.
+
+## D21. Nonlinear confirmation must be run at the stated demand limits
+A first confirmation lane change (2 s period) demanded about twice the jerk the table's own limit
+allows and pushed the steering rate to its hardware limit, so rate saturation (assumption A8)
+produced many failures that the linear analysis could not see. The confirmation now uses the
+cell's a_y,max AND a period raised until the lateral jerk is within `jerk_max_mps3`, which makes it
+consistent with the limits the supervisor will enforce. Failures dropped markedly and remaining ones
+are pruned (with every componentwise-larger gain). The confirmation is still a SAMPLE of gains per
+cell (A12); `docs/phase4_report.md` reports the failure rate of the random tests as an estimate of how
+often the linear analysis over-accepts.
+
+## D22. The envelope lives in `supervisor/`, offline analysis in `eval/`
+`egga.supervisor.envelope` is a runtime lookup over fixed arrays (typed with `mypy --strict`, written to
+port to C99). `egga.eval.envelope_build` and `tools/build_envelope.py` are offline. The table is
+`experiments/envelope/envelope_v1.npz` with a JSON manifest (grid, margins, assumptions A1..A12, git
+SHA, array hash); loading a table whose arrays do not match the manifest hash raises (corrupted
+table). Out-of-grid queries return no verified set instead of extrapolating.
+
+## D23. The conservatism curve needs the friction speed cap to be meaningful
+The 75 s mission includes ice (mu 0.25). Querying the table at mu_lo 0.9 allowed 15 m/s and an
+infeasible reference. With the grid's mu_lo 0.2 (a valid lower bound) the speed cap (k mu_lo g over the
+mission's peak curvature) and the verified speed together govern the speed; the report gives the
+tracking error for the envelope gain at 10 m/s, for the governed speed, and for the unprotected tuned
+gains.

@@ -1,0 +1,62 @@
+# Phase 4 envelope definition. Read by egga.eval.envelope_build (offline) and egga.supervisor.envelope.
+# The envelope is the set of steering-PID gains [Kp, Ki, Kd, Khead] verified stable for every grid
+# cell (speed, mu_lo, tau_bar, mass_scale) under assumptions A1..A12 below.
+version: 1
+dt_s: 0.01
+
+grid:
+  speed_mps: [5.0, 7.5, 10.0, 12.5, 15.0]
+  mu_lo: [0.2, 0.35, 0.5, 0.7, 0.9]
+  tau_bar_s: [0.0, 0.02, 0.04, 0.06, 0.08, 0.10, 0.12, 0.15]
+  mass_scale: [1.0, 1.3, 1.6, 1.9]
+
+# Candidate gains (a Cartesian grid). Ranges are the RL scheduler's gain clip ranges.
+gains:
+  kp: [0.4, 0.7, 1.0, 1.3, 1.6, 1.9, 2.2]
+  ki: [0.01, 0.05, 0.10, 0.15]
+  kd: [0.02, 0.07, 0.15, 0.25, 0.35, 0.45]
+  khead: [0.6, 0.8, 1.0, 1.2, 1.4, 1.6, 1.8]
+
+controller:
+  derivative_cutoff_hz: 5.0   # the filtered derivative the controllers use
+
+analysis:                      # linear, frozen-parameter, discrete time at dt_s
+  stiffness_scales: [0.5, 1.0] # cornering-stiffness corners (A6)
+  stability_margin: 1.0e-4     # every pole must satisfy |lambda| <= 1 - margin
+  fast_rho_max: 0.985          # all poles except the integrator mode must satisfy |lambda| <= this
+  min_damping: 0.15            # complex poles with |lambda| > damping_check_radius
+  damping_check_radius: 0.9
+  delay_margin_factor: 1.2     # also stable with the delay raised to factor * tau_bar
+  delay_margin_min_extra_steps: 2
+
+limits:
+  ay_fraction_k: 0.6           # a_y,max = k * mu_lo * g
+  jerk_max_mps3: 8.0           # steering-rate limit from a jerk limit (capped by hardware)
+  steer_rate_hw_max_rps: 0.6
+  steer_angle_max_rad: 0.5
+  min_feasible_speed_mps: 5.0
+
+nonlinear:                     # confirmation on the Phase 1 plant
+  tests_per_cell: 12         # nominal, best margin, max Kp, max Kd, max Khead, rest seeded random
+  seed: 0
+  tail_s: 2.0                # time simulated after the manoeuvre ends
+  lc_start_s: 1.0
+  lc_period_s: 2.0           # minimum half-wave period; raised so the lateral jerk <= jerk_max_mps3
+  max_lc_amp_rad: 0.15       # caps the lane-change steering amplitude (low-speed geometry)
+  max_abs_ey_m: 0.8
+  settle_window_s: 1.0
+  settle_abs_ey_m: 0.1
+
+assumptions:
+  A1: "The 2-DOF bicycle with linear tyres describes the plant while tyre utilisation stays below ay_fraction_k."
+  A2: "The true friction coefficient is at least mu_lo (the supervisor passes a conservative lower bound)."
+  A3: "The total steering latency (transport plus actuator lag) is at most tau_bar and constant; jitter stays inside the bound."
+  A4: "The vehicle mass scale is at most mass_scale of the cell (yaw inertia scales with mass)."
+  A5: "Speed is constant within the cell (frozen parameter); speed changes are slow compared with the closed-loop dynamics."
+  A6: "Effective cornering stiffness lies between the lower stiffness corner and 1.0 times nominal (covers tyre saturation up to utilisation k, load transfer and load sensitivity)."
+  A7: "Sensors are unbiased with noise small enough for the 5 Hz derivative filter to keep the loop linear; no sensor dropout or bias."
+  A8: "Steering rate and angle limits do not bind during the verified small-signal behaviour; large manoeuvres are limited by the demand limits."
+  A9: "The result is frozen-parameter, frozen-gain: stability while parameters or gains change is NOT covered by the analysis."
+  A10: "The road is flat with uniform friction; no crosswind, no split-mu, no camber."
+  A11: "The controller is the PID with heading term and curvature feedforward at 100 Hz with the stated derivative filter; the feedforward does not affect stability."
+  A12: "Nonlinear confirmation is a sample (tests_per_cell gains per cell: aggressive extremes plus seeded random) of one lane change at the demand limits (a_y,max and the jerk limit) with true delay equal to tau_bar and friction equal to mu_lo; untested accepted gains rely on the linear analysis and other manoeuvres are not covered."

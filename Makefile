@@ -1,4 +1,4 @@
-.PHONY: test lint typecheck stress report phase1 freeze-sets tune baselines calibrate-estimators estimators matlab-golden check-lib3 reproduce
+.PHONY: envelope envelope-check phase4 test lint typecheck stress report phase1 freeze-sets tune baselines calibrate-estimators estimators matlab-golden check-lib3 reproduce
 
 test:
 	uv run pytest -q
@@ -7,7 +7,16 @@ lint:
 	uv run ruff check src tests tools
 
 typecheck:
-	uv run mypy --strict src/egga/estimation
+	uv run mypy --strict src/egga/estimation src/egga/supervisor
+
+envelope:
+	uv run python tools/build_envelope.py
+
+envelope-check:
+	uv run python tools/build_envelope.py --check
+
+phase4:
+	uv run python -m egga.eval.phase4
 
 stress:
 	uv run python -m egga.eval.stress
@@ -41,4 +50,4 @@ check-lib3:
 
 # Phase 0 reproduce: regenerates the stress logs and the generated tables (MATLAB golden is
 # regenerated separately with `make matlab-golden` because it needs a MATLAB licence).
-reproduce: stress report phase1 baselines estimators test
+reproduce: stress report phase1 baselines estimators phase4 test

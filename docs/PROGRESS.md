@@ -1,5 +1,11 @@
 # Progress
 
+## Phase 4 (offline envelope verification): done pending rebuild-hash check
+- Verified-gain envelope over (speed, mu_lo, tau_bar, mass): linear analysis (controller algebra tested against `PIDController`), nonlinear confirmation at the demand limits, dominance pruning, hashed `experiments/envelope/envelope_v1.*`.
+- Runtime lookup in `supervisor/envelope.py` (mypy --strict clean): conservative AND of bracketing cells, explicit out-of-range policy, projection, demand limits, speed cap, max verified speed.
+- `docs/ENVELOPE_DESIGN.md`, `docs/ASSUMPTIONS.md` (A1..A12), `docs/phase4_report.md`.
+- Finding: thresholds leave no verified gain at 10 m/s for delay bounds >= 80 ms (D20); lower speed instead.
+
 ## Phase 3 (estimators with uncertainty): done
 - EKF for friction and mass (joint), delay bound by cross-correlation, `Estimate` interface, stale/invalid input gives widest bounds.
 - Calibrated on train only; evaluated on val with CIs and a conditions table: `docs/phase3_report.md`.
