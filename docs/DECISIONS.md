@@ -168,3 +168,68 @@ infeasible reference. With the grid's mu_lo 0.2 (a valid lower bound) the speed 
 mission's peak curvature) and the verified speed together govern the speed; the report gives the
 tracking error for the envelope gain at 10 m/s, for the governed speed, and for the unprotected tuned
 gains.
+
+## D24. The supervisor selects gains, speed and limits; it never commands steering
+`egga.supervisor.core.step` returns verified gains, a speed command and the demand limits
+(steering angle for a_y,max, steering-rate limit). The classical controller computes the steering,
+which is then clipped by those limits (the `envelope_guard` layer). The RL policy (Phase 6) can only
+propose gains; any proposal is range- and rate-checked and projected onto the verified set. The
+supervisor is a pure-function design with a flat config, fixed-size state and a fixed-size event ring
+buffer so it can be ported to C99; `supervisor/` has 100% branch coverage and passes `mypy --strict`.
+
+## D25. Gain changes move through verified grid points only
+The gain-rate limiter hops at most one candidate-grid step per `gain_hop_period`, only to verified
+neighbours. Each applied gain is therefore a verified point, but the TRANSITIONS between verified
+points are not themselves verified (assumption A9: frozen-gain analysis). When the envelope shrinks
+and the current gain is no longer verified, the target is applied at once (a forced jump, logged).
+
+## D26. Operating-domain assumption and the cost of caution
+With low excitation the friction interval stays at its prior width, so the supervisor assumes
+mu >= `mu_floor` (0.2) and caps speed from a_y,max at that value, and it uses the conservative
+delay bound until the estimator tightens it. Evidence that friction is below the floor
+(`mu_hi < mu_floor`) is outside every verified cell and goes to MINIMAL_RISK (latched until an explicit
+reset). The measured cost is large: B4 drives at roughly two thirds of the planned speed and spends
+most of its time in DEGRADED_ACTUATOR because the delay bound is conservative (see
+`docs/phase5_report.md`). Friction cannot be raised above the floor without exciting the tyres, which
+the speed cap prevents; this is a design limitation, not tuned away.
+
+## D27. Closed-loop speed governance uses a path-indexed reference
+When a controller sets the vehicle speed, the reference is sampled by distance along the path, not by
+time (otherwise a slower vehicle would chase a reference that has moved on). Ordinary controllers keep
+the time-indexed reference, so all earlier results are unchanged (the `linear_equiv` bit-exact test
+still passes). `progress_fraction` (distance covered over route length in the scenario time) is
+reported next to tracking error so safety is not compared without its speed cost.
+
+## D28. Verification certification strictly reflects actual vehicle speed
+In the initial supervisor design, when operating at an out-of-grid speed ($v < 5\text{ m/s}$ or
+$v > 15\text{ m/s}$), the gain lookup fell back to the nearest verified cell $v_{\text{ver}}$, but
+reported `verified = True`. The red-team audit diagnosed that claiming mathematical verification
+when the vehicle is outside the verified speed axis is false certification. `Outputs.verified` now
+strictly evaluates membership within `env.cell_mask(speed, ...)` at the vehicle's actual speed.
+Fallback gains remain available, but `verified` correctly reports `False`.
+
+## D29. Friction bounds clamped to verified grid ceiling
+Unbounded friction estimates ($\mu > 0.9$) could theoretically relax curvature speed caps and inflate
+steering demand limits beyond the physical tire grip table. `core.step` clamps $\mu_{\text{eff}} \le \mu_{\text{top}}$
+($\text{env.axes['mu'][-1]} = 0.9$). Unverified friction claims cannot expand actuator limits or relax
+speed caps.
+
+## D30. Bilateral speed governance and preview curvature dynamics
+Speed targets are bilaterally bounded by `min_feasible_speed` so reverse speed requests cannot slew
+the vehicle backward. When path curvature appears, the speed command decelerates toward the grip cap
+at maximum permitted deceleration `decel = 3.0 m/s^2`. An instantaneous step change in speed is
+physically impossible and violates longitudinal actuator dynamics; the supervisor flags `FLAG_CAPPED`
+immediately on onset while smoothly executing the braking profile.
+
+## D31. State isolation in RL proposal rate checking
+In `supervisor.health.rl_check`, candidate RL proposals were previously recording `state.last_rl`
+unconditionally. Repeating a rejected jump allowed an adversary to bypass the rate limiter on the
+second tick ($\Delta g = 0$). `health.rl_check` and `core.step` now only commit `state.last_rl`
+when a proposal is successfully accepted.
+
+## D32. Latch reset qualification requires continuous healthy interval
+Flickering domain violations could previously allow continuous reset requests to flap between
+`MINIMAL_RISK` and `FALLBACK` every tick. In accordance with automotive safety principles, clearing
+a safety latch requires the system to have remained continuously fault-free and in-domain for at
+least `stale_grace` ($0.3\text{ s}$). If a domain violation or hard fault occurs, `healthy_for`
+immediately resets to zero.

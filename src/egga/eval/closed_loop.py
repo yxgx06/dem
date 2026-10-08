@@ -82,6 +82,7 @@ class ClosedLoopResult:
     sideslip: np.ndarray = field(default_factory=lambda: np.zeros(0))
     estimates: dict[str, np.ndarray] = field(default_factory=dict)
     truth: dict[str, float] = field(default_factory=dict)
+    modes: np.ndarray = field(default_factory=lambda: np.zeros(0))
 
 
 def _wrap(angle: float) -> float:
@@ -173,6 +174,13 @@ def run_closed_loop(
     preview_count = int(getattr(controller, "preview_count", 0))
     solve_times: list[float] = []
     controller.reset()
+    governed = bool(getattr(controller, "governs_speed", False))
+    arclength = np.concatenate(
+        [[0.0], np.cumsum(np.hypot(np.diff(mission.x_ref), np.diff(mission.y_ref)))]
+    )
+    curvature_ref = mission.r_ref / mission.vx_t
+    v_cur = float(vx_t[0])
+    mode_log = np.full(n, np.nan)
 
     names = ("ey", "yaw_rate", "steer", "ay", "alpha_f", "alpha_r", "mu", "vx", "r_ref", "beta")
     log = {k: np.full(n, np.nan) for k in names}
@@ -186,8 +194,33 @@ def run_closed_loop(
     with np.errstate(all="ignore"):
         for k in range(n - 1):
             t_k = float(mission.t[k])
-            ex_g = mission.x_ref[k] - vehicle.x
-            ey_g = mission.y_ref[k] - vehicle.y
+            if governed:  # path-indexed reference: the vehicle may be slower than the plan
+                s_v = path_s
+                x_r = float(np.interp(s_v, arclength, mission.x_ref))
+                y_r = float(np.interp(s_v, arclength, mission.y_ref))
+                psi_r = float(np.interp(s_v, arclength, mission.psi_ref))
+                vx_k = v_cur
+                r_ref_k = float(np.interp(s_v, arclength, curvature_ref)) * vx_k
+                slope_k = float(np.interp(s_v, arclength, mission.slope_deg))
+                v_plan = float(np.interp(s_v, arclength, vx_t))
+                look = max(30.0, 3.0 * vx_k)
+                j0 = int(np.searchsorted(arclength, s_v))
+                j1 = int(np.searchsorted(arclength, s_v + look)) + 1
+                curv_ahead = float(np.max(np.abs(curvature_ref[j0:j1]))) if j1 > j0 else 0.0
+            else:
+                x_r, y_r, psi_r = (
+                    float(mission.x_ref[k]),
+                    float(mission.y_ref[k]),
+                    float(mission.psi_ref[k]),
+                )
+                vx_k, r_ref_k, slope_k = (
+                    float(vx_t[k]),
+                    float(mission.r_ref[k]),
+                    float(mission.slope_deg[k]),
+                )
+                v_plan, curv_ahead = vx_k, 0.0
+            ex_g = x_r - vehicle.x
+            ey_g = y_r - vehicle.y
             e_true = float(ey_g * np.cos(vehicle.psi) - ex_g * np.sin(vehicle.psi))
             if not np.isfinite(e_true) or abs(e_true) > divergence_threshold_m:
                 diverged_at = t_k
@@ -221,13 +254,17 @@ def run_closed_loop(
             obs = Observation(
                 e_y=m_ey.value,
                 de_y=de_fd,
-                heading_error=_wrap(float(mission.psi_ref[k] - vehicle.psi)),
+                heading_error=_wrap(psi_r - vehicle.psi),
                 yaw_rate=m_r.value,
-                yaw_rate_ref=float(mission.r_ref[k]),
-                slope_deg=float(mission.slope_deg[k]),
+                yaw_rate_ref=r_ref_k,
+                slope_deg=slope_k,
                 mu_belief=belief,
-                vx=float(vx_t[k]),
+                vx=vx_k,
                 r_ref_preview=preview,
+                estimate=last_estimate,
+                steer_meas=m_st.value,
+                speed_request=v_plan,
+                curvature_ahead=curv_ahead,
             )
             cmd = controller.command(obs)
             if cmd.solve_time_s > 0.0:
@@ -236,7 +273,7 @@ def run_closed_loop(
                 last_estimate = estimator.update(
                     Measurements(
                         t=t_k,
-                        vx=float(vx_t[k]),
+                        vx=vx_k,
                         yaw_rate=m_r.value,
                         yaw_rate_valid=m_r.valid,
                         lateral_accel=m_ay.value,
@@ -257,18 +294,16 @@ def run_closed_loop(
                 ):
                     est_log[key][k] = val
             delta = actuator.step(cmd.steer)
-            out = vehicle.step(
-                delta,
-                mu_l,
-                mu_r,
-                float(mission.slope_deg[k]),
-                dt,
-                float(vx_t[k]),
-                float(ax_t[k]),
-                t_k,
-            )
-            path_s += float(vx_t[k]) * dt
+            if governed and cmd.speed_cmd is not None:
+                v_new = max(float(cmd.speed_cmd), 1.0)
+                ax_k = (v_new - vx_k) / dt
+                v_cur = v_new
+            else:
+                v_new, ax_k = vx_k, float(ax_t[k])
+            out = vehicle.step(delta, mu_l, mu_r, slope_k, dt, v_new, ax_k, t_k)
+            path_s += v_new * dt
             ay_prev = out.ay
+            mode_log[k] = cmd.mode
 
             log["ey"][k] = e_true
             log["yaw_rate"][k] = vehicle.r
@@ -277,13 +312,13 @@ def run_closed_loop(
             log["alpha_f"][k] = out.alpha_f
             log["alpha_r"][k] = out.alpha_r
             log["mu"][k] = mu_true
-            log["vx"][k] = vx_t[k]
-            log["r_ref"][k] = mission.r_ref[k]
-            log["beta"][k] = np.arctan2(vehicle.vy, vx_t[k])
+            log["vx"][k] = v_new
+            log["r_ref"][k] = r_ref_k
+            log["beta"][k] = np.arctan2(vehicle.vy, v_new)
             gains[k] = cmd.gains
 
     if diverged_at is None:
-        for arr in (*log.values(), *est_log.values()):
+        for arr in (*log.values(), *est_log.values(), mode_log):
             arr[n - 1] = arr[n - 2]
         gains[n - 1] = gains[n - 2]
 
@@ -305,7 +340,10 @@ def run_closed_loop(
         yaw_rate_ref=log["r_ref"],
         sideslip=log["beta"],
         estimates=est_log if estimator is not None else {},
+        modes=mode_log,
         truth={
+            "distance_m": path_s,
+            "path_length_m": float(arclength[-1]),
             "mass_scale": float(cfg["mass"]["mass_scale"]),
             "latency_s": float(cfg["actuator"]["delay_s"])
             + 0.5 * float(cfg["actuator"]["jitter_s"])

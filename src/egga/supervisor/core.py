@@ -91,7 +91,8 @@ def step(state: State, cfg: Config, env: Envelope, inp: Inputs) -> Outputs:
         yaw_rate, steer_meas, steer_cmd = inp.yaw_rate, inp.steer_meas, inp.steer_cmd
         e_abs, e_rate = inp.e_abs, inp.e_rate_abs
 
-    mu_eff = max(mu_lo, cfg.mu_floor)
+    mu_top = float(env.axes["mu"][-1])
+    mu_eff = min(max(mu_lo, cfg.mu_floor), mu_top)
     conservative = state.mode in _LATCHED
     tau_q = max(tau, cfg.tau_fallback) if conservative else tau
     mass_q = max(mass_hi, cfg.mass_fallback) if conservative else mass_hi
@@ -108,22 +109,24 @@ def step(state: State, cfg: Config, env: Envelope, inp: Inputs) -> Outputs:
         state.act_bad = health.accumulate(state.act_bad, act_now, dt)
         sat_now = health.saturation_bad(cfg, steer_cmd, steer_limit)
         state.sat_bad = health.accumulate(state.sat_bad, sat_now, dt)
-        state.est_bad = health.accumulate(state.est_bad, est_status >= int(EstStatus.STALE), dt)
+        stale_now = est_status >= int(EstStatus.STALE)
+        state.est_bad = health.accumulate_leaky(state.est_bad, stale_now, dt)
     yaw_flag = state.yaw_bad >= cfg.yaw_persist
     act_flag = state.act_bad >= cfg.actuator_persist
     sat_flag = state.sat_bad >= cfg.saturation_persist
     est_flag = state.est_bad >= cfg.stale_grace
     hard_fault = invalid or yaw_flag or act_flag or sat_flag or est_flag
-    state.healthy_for = 0.0 if hard_fault else state.healthy_for + dt
-
     cap = env.speed_cap(curvature, mu_eff)
     v_ver = env.max_verified_speed(mu_eff, tau_q, mass_q)
     domain_violation = (not invalid) and mu_hi < cfg.mu_floor
     no_set = domain_violation or cap is None or v_ver is None
 
+    state.healthy_for = 0.0 if (hard_fault or no_set) else state.healthy_for + dt
+
     previous_mode = state.mode
+    reset_ok = inp.request_reset and not invalid and state.healthy_for >= cfg.stale_grace
     mode, reason = modes.next_mode(
-        state, cfg, t, no_set, hard_fault, tau, mu_hi, quality, inp.request_reset and not invalid
+        state, cfg, t, no_set, hard_fault, tau, mu_hi, quality, reset_ok
     )
     if mode != previous_mode:
         state.mode = mode
@@ -148,17 +151,18 @@ def step(state: State, cfg: Config, env: Envelope, inp: Inputs) -> Outputs:
     if cap is None or v_ver is None or state.mode == int(Mode.MINIMAL_RISK):
         target = safe
     else:
-        target = min(request * scale, cap, v_ver)
+        target = max(safe, min(request * scale, cap, v_ver))
     if math.isnan(state.speed_cmd):
         state.speed_cmd = speed
     state.speed_cmd += max(-cfg.decel * dt, min(cfg.accel * dt, target - state.speed_cmd))
+    state.speed_cmd = max(safe, state.speed_cmd)
 
     mask = env.cell_mask(max(state.speed_cmd, speed), mu_eff, tau_q, mass_q)
     if (mask is None or not bool(mask.any())) and v_ver is not None:
         mask = env.cell_mask(v_ver, mu_eff, tau_q, mass_q)
-    verified = mask is not None and bool(mask.any())
+    have_mask = mask is not None and bool(mask.any())
     forced = False
-    if mask is not None and verified:
+    if mask is not None and have_mask:
         proposal: Gain = inp.rl_gain if rl_ok else inp.reference_gain
         target_idx = env.project_index(mask, proposal)
         assert target_idx is not None
@@ -188,6 +192,14 @@ def step(state: State, cfg: Config, env: Envelope, inp: Inputs) -> Outputs:
         )
     else:
         applied = inp.reference_gain
+
+    actual_mask = env.cell_mask(speed, mu_eff, tau_q, mass_q)
+    verified = (
+        actual_mask is not None
+        and bool(actual_mask.any())
+        and state.have_gain
+        and env.contains(actual_mask, applied)
+    )
 
     rate_limit = env.rate_limit(max(speed, state.speed_cmd), mass_q)
     flags = (

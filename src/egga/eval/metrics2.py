@@ -10,6 +10,21 @@ from egga.eval.closed_loop import ClosedLoopResult
 UTILISATION_THRESHOLD = 0.95
 
 
+MODE_NAMES = ("nominal", "cautious", "low_mu", "degraded", "fallback", "minimal_risk")
+
+
+def _mode_fractions(run: ClosedLoopResult) -> dict[str, float]:
+    """Fraction of supervised ticks in each mode (NaN everywhere without a supervisor)."""
+    modes = run.modes[np.isfinite(run.modes)]
+    modes = modes[modes >= 0].astype(int)
+    if modes.size == 0:
+        return {f"mode_{name}": float("nan") for name in MODE_NAMES}
+    counts = np.bincount(modes, minlength=len(MODE_NAMES))[: len(MODE_NAMES)]
+    return {
+        f"mode_{name}": float(c / modes.size) for name, c in zip(MODE_NAMES, counts, strict=True)
+    }
+
+
 def run_metrics(run: ClosedLoopResult, mu_min: float) -> dict[str, Any]:
     """Per-run tracking, tyre and actuator metrics over the samples before any divergence."""
     vehicle = load_config("vehicle.yaml")
@@ -44,9 +59,10 @@ def run_metrics(run: ClosedLoopResult, mu_min: float) -> dict[str, Any]:
             else 0.0
         ),
         "steer_rate_rms": float(np.sqrt(np.mean(steer_rate**2))),
-        "demand_over_limit_mu_min": float(
-            np.nanmax(np.abs(run.ay)) / max(mu_min * g, 1e-6)
-        ),
+        "demand_over_limit_mu_min": float(np.nanmax(np.abs(run.ay)) / max(mu_min * g, 1e-6)),
+        "progress_fraction": float(run.truth["distance_m"] / run.truth["path_length_m"]),
+        "mean_speed_mps": float(np.nanmean(run.vx[valid])) if valid.any() else float("nan"),
+        **_mode_fractions(run),
         "diverged": diverged,
         "diverged_at_s": float(run.diverged_at_s) if diverged else float("nan"),
         "solve_mean_ms": float(run.solve_times.mean() * 1e3) if run.solve_times.size else 0.0,

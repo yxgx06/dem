@@ -1,4 +1,4 @@
-.PHONY: envelope envelope-check phase4 test lint typecheck stress report phase1 freeze-sets tune baselines calibrate-estimators estimators matlab-golden check-lib3 reproduce
+.PHONY: phase5 coverage envelope envelope-check phase4 test lint typecheck stress report phase1 freeze-sets tune baselines calibrate-estimators estimators matlab-golden check-lib3 reproduce
 
 test:
 	uv run pytest -q
@@ -17,6 +17,12 @@ envelope-check:
 
 phase4:
 	uv run python -m egga.eval.phase4
+
+phase5:
+	uv run python -m egga.eval.phase5
+
+coverage:
+	uv run pytest -q --cov=egga.supervisor --cov-branch --cov-report=term-missing --cov-fail-under=100 tests/test_supervisor.py tests/test_supervisor_properties.py tests/test_envelope.py tests/redteam/test_supervisor_redteam.py
 
 stress:
 	uv run python -m egga.eval.stress
@@ -50,4 +56,4 @@ check-lib3:
 
 # Phase 0 reproduce: regenerates the stress logs and the generated tables (MATLAB golden is
 # regenerated separately with `make matlab-golden` because it needs a MATLAB licence).
-reproduce: stress report phase1 baselines estimators phase4 test
+reproduce: stress report phase1 baselines estimators phase4 phase5 test

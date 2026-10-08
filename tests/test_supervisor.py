@@ -329,13 +329,13 @@ def test_gain_changes_are_rate_limited_and_stay_verified_when_the_envelope_shrin
     v_ver = ENV.max_verified_speed(0.5, 0.1, 1.3)
     assert v_ver is not None
     mask = ENV.cell_mask(v_ver, 0.5, 0.1, 1.3)  # gains come from the highest verified speed
-    assert out.verified and mask is not None and ENV.contains(mask, out.gains)
+    assert not out.verified and mask is not None and ENV.contains(mask, out.gains)
 
 
 def test_speed_above_the_grid_uses_the_hardware_rate_limit_and_verified_speed_mask() -> None:
     out = step(State(), CFG, ENV, make(0.0, speed=20.0, speed_request=20.0))
     assert out.rate_limit == CFG.steer_rate_hw_max
-    assert out.verified  # the mask falls back to the highest verified speed
+    assert not out.verified  # out-of-grid speed is not verified (per redteam finding V2)
 
 
 def test_event_log_is_a_ring_buffer() -> None:

@@ -6,7 +6,7 @@ from typing import Any
 
 import numpy as np
 
-from egga.config import load_baselines, load_config
+from egga.config import REPO_ROOT, load_baselines, load_config
 from egga.controllers.base import Controller, Observation
 from egga.controllers.classical import (
     PDFeedforwardController,
@@ -16,9 +16,12 @@ from egga.controllers.classical import (
 from egga.controllers.lqr import DesignVehicle, LQRController
 from egga.controllers.mpc import MPCController
 from egga.controllers.rl_actor import RLScheduler, load_rl_weights
+from egga.controllers.supervised import SupervisedController
 from egga.plant.actuator import TransportDelay, steer_actuator
 from egga.plant.bicycle import BicyclePlant, VehicleParams
 from egga.scenarios.mission import Mission, build_mission
+from egga.supervisor.envelope import Envelope
+from egga.supervisor.types import Config
 
 CONTROLLER_NAMES = ("pid", "pd_ff", "rl_handtyped", "rl_trained")
 MU_BELIEF_FLOOR = 0.05
@@ -66,7 +69,7 @@ def make_controller(
     the mass the design is allowed to know (true-mass variants); nominal-mass variants ignore it.
     """
     ctrl_cfg = load_config("controllers.yaml")
-    if name.startswith(("b0_", "b1_", "b6_", "b7_", "b2_")):
+    if name.startswith(("b0_", "b1_", "b2_", "b4_", "b6_", "b7_")):
         return _make_baseline(
             name, mission, dt, derivative_cutoff_hz, mass_scale, inertia_follows_mass, ctrl_cfg
         )
@@ -102,6 +105,15 @@ def _make_baseline(
     if name == "b2_rl_oracle":
         weights = load_rl_weights("handtyped")
         return RLScheduler(weights, ctrl_cfg["rl"], dt, mission.wheelbase, mission.vx, cutoff)
+    if name == "b4_supervised":
+        sup_cfg = Config.from_dict(load_config("supervisor.yaml"), vehicle)
+        envelope = Envelope.load(
+            REPO_ROOT / "experiments" / "envelope" / "envelope_v1.npz",
+            REPO_ROOT / "experiments" / "envelope" / "envelope_v1.json",
+        )
+        return SupervisedController(
+            base["pid_ff"], mission.wheelbase, mission.vx, dt, cutoff, sup_cfg, envelope
+        )
     lqr_cfg = base["lqr"]
     follows = bool(lqr_cfg["inertia_follows_mass"]) if inertia_follows_mass is None else (
         inertia_follows_mass

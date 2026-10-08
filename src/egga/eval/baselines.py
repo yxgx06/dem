@@ -5,7 +5,8 @@ from typing import Any
 import numpy as np
 import pandas as pd
 
-from egga.config import REPO_ROOT, load_config, set_baseline_override
+from egga.config import REPO_ROOT, load_config, load_estimators, set_baseline_override
+from egga.estimation.suite import EstimatorSuite
 from egga.eval.closed_loop import ClosedLoopResult, load_plant_config, run_closed_loop
 from egga.eval.metrics2 import run_metrics
 from egga.eval.provenance import provenance
@@ -29,8 +30,18 @@ EVAL_SETS = ("train", "val")
 def run_scenario(controller: str, spec: dict[str, Any]) -> ClosedLoopResult:
     overrides, mission_cfg, belief_error, seed = run_arguments(spec)
     cfg = load_plant_config(overrides)
+    estimator = (
+        EstimatorSuite(load_config("vehicle.yaml"), load_estimators(), float(mission_cfg["dt_s"]))
+        if controller.startswith("b4_")
+        else None
+    )
     return run_closed_loop(
-        controller, cfg, seed=seed, mu_belief_error=belief_error, mission_cfg=mission_cfg
+        controller,
+        cfg,
+        seed=seed,
+        mu_belief_error=belief_error,
+        mission_cfg=mission_cfg,
+        estimator=estimator,
     )
 
 
@@ -126,8 +137,10 @@ def main() -> None:
         df = evaluate_set(BASELINES, set_name)
         df.to_parquet(RESULTS_DIR / f"{set_name}_runs.parquet", index=False)
         frames[set_name] = df
-        parts.append(f"## {set_name} set ({df['scenario'].nunique()} scenarios)\n\n"
-                     + _md_table(_aggregate(df)))
+        parts.append(
+            f"## {set_name} set ({df['scenario'].nunique()} scenarios)\n\n"
+            + _md_table(_aggregate(df))
+        )
     audit = audit_lqr_reproduction()
     audit.to_parquet(RESULTS_DIR / "lqr_audit_reproduction.parquet", index=False)
 
@@ -146,13 +159,17 @@ def main() -> None:
         f"(oracle) and true mass where noted; tuned on the TRAIN set only.\n"
     )
     text = (
-        "# Phase 2 baselines\n\n" + header + "\n"
+        "# Phase 2 baselines\n\n"
+        + header
+        + "\n"
         + "\n\n".join(parts)
         + "\n\nMax/RMS/p95/worst-1% are over non-diverged runs only; the divergence count is "
-        "reported separately. Cross-track error in cm.\n\n## B6 solve time\n\n" + solve
+        "reported separately. Cross-track error in cm.\n\n## B6 solve time\n\n"
+        + solve
         + "\n\n## LQR audit reproduction (Phase 0 simulator)\n\n"
         "Audit claims come from `configs/audit_reference.yaml`; they are claims, not results.\n\n"
-        + _md_table(audit) + "\n"
+        + _md_table(audit)
+        + "\n"
     )
     (DOCS / "phase2_report.md").write_text(text, encoding="utf-8")
     print("wrote docs/phase2_report.md")

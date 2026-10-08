@@ -10,6 +10,15 @@ def accumulate(accumulated: float, bad: bool, dt: float) -> float:
     return accumulated + dt if bad else 0.0
 
 
+def accumulate_leaky(
+    accumulated: float, bad: bool, dt: float, decay: float = 3.0, cap: float = 0.6
+) -> float:
+    """Seconds a condition has persisted, decaying on good samples instead of clearing to 0."""
+    if bad:
+        return min(cap, accumulated + dt)
+    return max(0.0, accumulated - decay * dt)
+
+
 def push_command(state: State, command: float) -> None:
     state.hist[state.hist_n % HISTORY] = command
     state.hist_n += 1
@@ -77,7 +86,9 @@ def rl_check(
         abs(g - float(prev)) / dt > rate
         for g, prev, rate in zip(gain, state.last_rl, cfg.rl_rate, strict=True)
     )
+    if too_fast:
+        return int(Reason.RL_REJECTED_RATE)
     for i in range(4):
         state.last_rl[i] = gain[i]
     state.last_rl_valid = True
-    return int(Reason.RL_REJECTED_RATE) if too_fast else int(Reason.NONE)
+    return int(Reason.NONE)

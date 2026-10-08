@@ -25,6 +25,9 @@ class PIDController:
             FilteredDerivative(derivative_cutoff_hz, dt) if derivative_cutoff_hz else None
         )
 
+    def set_gains(self, kp: float, ki: float, kd: float, khead: float) -> None:
+        self._kp, self._ki, self._kd, self._khead = kp, ki, kd, khead
+
     def reset(self) -> None:
         self._integ = 0.0
         if self._deriv:
