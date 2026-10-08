@@ -99,6 +99,7 @@ def run_closed_loop(
     mission_cfg: dict[str, Any] | None = None,
     estimator: EstimatorSuite | None = None,
     mu_source: str = "oracle",
+    controller_instance: Any = None,
 ) -> ClosedLoopResult:
     cfg = plant_cfg if plant_cfg is not None else load_plant_config()
     vehicle_cfg = load_config("vehicle.yaml")
@@ -162,14 +163,17 @@ def run_closed_loop(
         friction = FrictionProfile.from_config(friction_cfg["profile"], friction_cfg["split_mu"])
 
     cutoff = cfg["controller"]["derivative_cutoff_hz"]
-    controller = make_controller(
-        controller_name,
-        mission,
-        dt,
-        derivative_cutoff_hz=None if cutoff is None else float(cutoff),
-        mass_scale=float(cfg["mass"]["mass_scale"]),
-        inertia_follows_mass=cfg["mass"]["inertia_scale"] is None,
-    )
+    if controller_instance is not None:
+        controller = controller_instance
+    else:
+        controller = make_controller(
+            controller_name,
+            mission,
+            dt,
+            derivative_cutoff_hz=None if cutoff is None else float(cutoff),
+            mass_scale=float(cfg["mass"]["mass_scale"]),
+            inertia_follows_mass=cfg["mass"]["inertia_scale"] is None,
+        )
     stride = int(getattr(controller, "preview_spacing_steps", 0))
     preview_count = int(getattr(controller, "preview_count", 0))
     solve_times: list[float] = []

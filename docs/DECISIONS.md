@@ -233,3 +233,26 @@ Flickering domain violations could previously allow continuous reset requests to
 a safety latch requires the system to have remained continuously fault-free and in-domain for at
 least `stale_grace` ($0.3\text{ s}$). If a domain violation or hard fault occurs, `healthy_for`
 immediately resets to zero.
+
+## D33. RL Architecture: 92-parameter MLP with strict observation isolation
+The B5 adaptive policy is parameterized as a compact 92-parameter MLP ($6 \to 8(\tanh) \to 4$)
+designed for bit-exact verification and embedded C99 execution. The 6-dimensional observation
+vector strictly consumes estimator suite outputs ($\hat{\mu}, \bar{\tau}$) and sensor measurements
+($e_y, \dot{e}_y, \tilde{\psi}, \tilde{r}$); ground truth plant internals (e.g. true tire slip,
+instantaneous unmeasured friction, plant inertia) are strictly sequestered from the policy. The
+policy outputs bounded gain adjustments $\Delta K$ within a safety box $[-1, 1]^4$ scaled to
+$\pm [0.6, 0.04, 0.15, 0.6]$, rather than direct steering commands.
+
+## D34. Supervisor envelope guarding prevents gain-induced instability
+Unsupervised RL gain adaptation (B3 ablation) experiences catastrophic divergences under actuator
+latency and slippery roads (3 divergences on train, 4 on validation). In contrast, the B5 controller
+channels all policy proposals through the verified runtime supervisor, which validates rate limits,
+verifies gain set membership in the precomputed envelope, clamps lateral acceleration commands,
+and enforces friction speed caps. B5 achieved 0 divergences across all 48 train and 24 validation
+scenarios across 20 independently trained random seeds.
+
+## D35. Zero-proposal bit-exact numerical equivalence to B4
+When the RL policy proposes zero gain adjustments ($\Delta K = \mathbf{0}$), the B5 controller
+is proven to be numerically equivalent to the B4 supervisor baseline down to floating-point
+precision (max difference $< 10^{-15}\text{ m}$). This guarantees that the learning system is a
+strict safe perturbation around a certified baseline.

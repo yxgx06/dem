@@ -32,7 +32,7 @@ def run_scenario(controller: str, spec: dict[str, Any]) -> ClosedLoopResult:
     cfg = load_plant_config(overrides)
     estimator = (
         EstimatorSuite(load_config("vehicle.yaml"), load_estimators(), float(mission_cfg["dt_s"]))
-        if controller.startswith("b4_")
+        if controller.startswith(("b4_", "b5_", "b3_"))
         else None
     )
     return run_closed_loop(

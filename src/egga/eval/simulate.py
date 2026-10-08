@@ -69,7 +69,7 @@ def make_controller(
     the mass the design is allowed to know (true-mass variants); nominal-mass variants ignore it.
     """
     ctrl_cfg = load_config("controllers.yaml")
-    if name.startswith(("b0_", "b1_", "b2_", "b4_", "b6_", "b7_")):
+    if name.startswith(("b0_", "b1_", "b2_", "b3_", "b4_", "b5_", "b6_", "b7_")):
         return _make_baseline(
             name, mission, dt, derivative_cutoff_hz, mass_scale, inertia_follows_mass, ctrl_cfg
         )
@@ -114,9 +114,49 @@ def _make_baseline(
         return SupervisedController(
             base["pid_ff"], mission.wheelbase, mission.vx, dt, cutoff, sup_cfg, envelope
         )
+    if name == "b5_rl_supervised":
+        sup_cfg = Config.from_dict(load_config("supervisor.yaml"), vehicle)
+        envelope = Envelope.load(
+            REPO_ROOT / "experiments" / "envelope" / "envelope_v1.npz",
+            REPO_ROOT / "experiments" / "envelope" / "envelope_v1.json",
+        )
+        from egga.controllers.rl_supervised import RLSupervisedController
+
+        best_weights = REPO_ROOT / "results" / "phase6" / "b5_best.json"
+        wp = best_weights if best_weights.exists() else None
+        return RLSupervisedController(
+            base["pid_ff"],
+            mission.wheelbase,
+            mission.vx,
+            dt,
+            cutoff,
+            sup_cfg,
+            envelope,
+            weights_path=wp,
+        )
+    if name == "b3_rl_unsupervised":
+        envelope = Envelope.load(
+            REPO_ROOT / "experiments" / "envelope" / "envelope_v1.npz",
+            REPO_ROOT / "experiments" / "envelope" / "envelope_v1.json",
+        )
+        ref = (
+            float(envelope.reference_gain[0]),
+            float(envelope.reference_gain[1]),
+            float(envelope.reference_gain[2]),
+            float(envelope.reference_gain[3]),
+        )
+        from egga.controllers.rl_supervised import RLUnsupervisedController
+
+        best_weights = REPO_ROOT / "results" / "phase6" / "b3_best.json"
+        wp = best_weights if best_weights.exists() else None
+        return RLUnsupervisedController(
+            base["pid_ff"], mission.wheelbase, mission.vx, dt, cutoff, ref, weights_path=wp
+        )
     lqr_cfg = base["lqr"]
-    follows = bool(lqr_cfg["inertia_follows_mass"]) if inertia_follows_mass is None else (
-        inertia_follows_mass
+    follows = (
+        bool(lqr_cfg["inertia_follows_mass"])
+        if inertia_follows_mass is None
+        else (inertia_follows_mass)
     )
     if name == "b6_mpc":
         design = DesignVehicle.from_config(vehicle, mass_scale, follows)

@@ -1,0 +1,52 @@
+{
+  "provenance": {
+    "git_sha": "d176ee30e6fc7a6824a7dbb7b84aa9ef49ea5e90",
+    "git_dirty": true,
+    "config_hash": "d46ffb6c4c5bf557",
+    "python": "3.12.10",
+    "numpy": "2.5.3",
+    "scipy": "1.18.1"
+  },
+  "train": {
+    "n_scenarios": 48,
+    "wilcoxon_max_stat": 0.0,
+    "wilcoxon_max_pvalue": NaN,
+    "wilcoxon_rms_stat": 0.0,
+    "wilcoxon_rms_pvalue": NaN,
+    "mean_diff_max_cm": 0.0,
+    "ci95_diff_max_cm": [
+      0.0,
+      0.0
+    ],
+    "mean_diff_rms_cm": 0.0,
+    "ci95_diff_rms_cm": [
+      0.0,
+      0.0
+    ],
+    "median_b4_max_cm": 0.9313936958951675,
+    "median_b5_max_cm": 0.9313936958951675,
+    "p95_b4_max_cm": 3.0636608529010094,
+    "p95_b5_max_cm": 3.0636608529010094
+  },
+  "val": {
+    "n_scenarios": 24,
+    "wilcoxon_max_stat": 0.0,
+    "wilcoxon_max_pvalue": NaN,
+    "wilcoxon_rms_stat": 0.0,
+    "wilcoxon_rms_pvalue": NaN,
+    "mean_diff_max_cm": 0.0,
+    "ci95_diff_max_cm": [
+      0.0,
+      0.0
+    ],
+    "mean_diff_rms_cm": 0.0,
+    "ci95_diff_rms_cm": [
+      0.0,
+      0.0
+    ],
+    "median_b4_max_cm": 1.4938592463348281,
+    "median_b5_max_cm": 1.4938592463348281,
+    "p95_b4_max_cm": 3.9321611573691166,
+    "p95_b5_max_cm": 3.9321611573691166
+  }
+}
