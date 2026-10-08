@@ -1,0 +1,198 @@
+{
+  "metadata": {
+    "git_sha": "e2d34797ab426275d4f2a7acdf2c53bbf5beea77",
+    "git_dirty": true,
+    "config_hash": "d46ffb6c4c5bf557",
+    "python": "3.12.10",
+    "numpy": "2.5.3",
+    "scipy": "1.18.1"
+  },
+  "preregistration": {
+    "version": 1,
+    "protocol_id": "EGGA-PHASE7-PREREGISTRATION",
+    "pre_unlock_commit_sha": "e2d3479",
+    "test_set_hash": "3ef264c5954f72477e68d5b8357134a5e37aeef3921abef6fee52273b1e27aac",
+    "registered_timestamp": "2026-10-08T20:18:00+05:30",
+    "unlocked_for": "Phase 7 Final Held-Out Evaluation",
+    "hypotheses": {
+      "H1": {
+        "statement": "B5 (Envelope-Guarded RL) experiences 0 catastrophic divergences across all 48 held-out test scenarios, proving safety envelope preservation.",
+        "expected_outcome": "diverged == 0"
+      },
+      "H2": {
+        "statement": "B3 (Unsupervised RL ablation) experiences >= 1 catastrophic divergence on the held-out test set under unmodeled friction and latency variations, proving supervisor necessity.",
+        "expected_outcome": "diverged >= 1"
+      },
+      "H3": {
+        "statement": "B5 achieves non-inferior tracking error compared to B4, maintaining max lateral error within envelope bounds (< 50 cm) across all non-divergent scenarios.",
+        "expected_outcome": "p95_of_max_cm < 50.0"
+      }
+    },
+    "evaluation_protocol": {
+      "candidate": "b5_rl_supervised",
+      "baseline": "b4_supervised",
+      "ablation": "b3_rl_unsupervised",
+      "comparators": [
+        "b0_pid_ff",
+        "b1_pd_ff"
+      ],
+      "dataset": "test",
+      "n_scenarios": 48,
+      "metrics": [
+        "diverged",
+        "max_abs_ey_cm",
+        "rms_ey_cm",
+        "progress_fraction",
+        "mean_speed_mps",
+        "utilisation_over_frac"
+      ],
+      "statistical_tests": {
+        "wilcoxon": {
+          "test": "two-sided paired Wilcoxon signed-rank test",
+          "metric": "max_abs_ey_cm",
+          "alpha": 0.05
+        },
+        "bootstrap": {
+          "method": "percentile bootstrap (1,000 resamples)",
+          "metrics": [
+            "max_abs_ey_cm diff (B5 - B4)",
+            "rms_ey_cm diff (B5 - B4)"
+          ],
+          "confidence_level": 0.95
+        }
+      }
+    }
+  },
+  "hypotheses_verdict": {
+    "H1": {
+      "pass": true,
+      "b5_diverged": 0,
+      "b4_diverged": 0
+    },
+    "H2": {
+      "pass": true,
+      "b3_diverged": 31
+    },
+    "H3": {
+      "pass": true,
+      "b5_p95_max_cm": 1.446660457874575
+    }
+  },
+  "aggregate": [
+    {
+      "controller": "b0_pid_ff",
+      "n": 48,
+      "diverged": 31,
+      "median_max_cm": 2.624915295513881,
+      "p95_of_max_cm": 52.946142982126304,
+      "mean_rms_cm": 2.3704763711090133,
+      "median_progress": 0.7063333333333212,
+      "mean_speed_mps": 11.023064020833331,
+      "utilisation_over_frac": 0.002305946337669969
+    },
+    {
+      "controller": "b1_pd_ff",
+      "n": 48,
+      "diverged": 24,
+      "median_max_cm": 3.060824679618145,
+      "p95_of_max_cm": 8.004930811085671,
+      "mean_rms_cm": 0.9462346399290752,
+      "median_progress": 0.9969999999999528,
+      "mean_speed_mps": 11.023064020833331,
+      "utilisation_over_frac": 0.0011513814765209305
+    },
+    {
+      "controller": "b4_supervised",
+      "n": 48,
+      "diverged": 0,
+      "median_max_cm": 1.0499973345759108,
+      "p95_of_max_cm": 1.446660457874575,
+      "mean_rms_cm": 0.5156864853796818,
+      "median_progress": 0.4480228059183322,
+      "mean_speed_mps": 5.206195870668114,
+      "utilisation_over_frac": 0.0
+    },
+    {
+      "controller": "b3_rl_unsupervised",
+      "n": 48,
+      "diverged": 31,
+      "median_max_cm": 2.6195993410437777,
+      "p95_of_max_cm": 50.201326166645366,
+      "mean_rms_cm": 2.0809317296199743,
+      "median_progress": 0.707333333333321,
+      "mean_speed_mps": 11.023064020833331,
+      "utilisation_over_frac": 0.0022455503815901607
+    },
+    {
+      "controller": "b5_rl_supervised",
+      "n": 48,
+      "diverged": 0,
+      "median_max_cm": 1.0499973345759108,
+      "p95_of_max_cm": 1.446660457874575,
+      "mean_rms_cm": 0.5156864853796818,
+      "median_progress": 0.4480228059183322,
+      "mean_speed_mps": 5.206195870668114,
+      "utilisation_over_frac": 0.0
+    }
+  ],
+  "paired_b5_b4": [
+    {
+      "comparison": "b5_rl_supervised vs b4_supervised",
+      "scenarios": 48,
+      "b4_supervised_failed_b5_rl_supervised_ok": 0,
+      "b5_rl_supervised_failed_b4_supervised_ok": 0,
+      "both_failed": 0,
+      "candidate_beats_baseline_on_error": 0,
+      "baseline_beats_candidate_on_error": 0
+    }
+  ],
+  "paired_b3_b4": [
+    {
+      "comparison": "b3_rl_unsupervised vs b4_supervised",
+      "scenarios": 48,
+      "b4_supervised_failed_b3_rl_unsupervised_ok": 0,
+      "b3_rl_unsupervised_failed_b4_supervised_ok": 31,
+      "both_failed": 0,
+      "candidate_beats_baseline_on_error": 0,
+      "baseline_beats_candidate_on_error": 17
+    }
+  ],
+  "b5_modes": [
+    {
+      "mode": "nominal",
+      "mean_fraction": 0.06664445184938354
+    },
+    {
+      "mode": "cautious",
+      "mean_fraction": 0.0
+    },
+    {
+      "mode": "low_mu",
+      "mean_fraction": 0.0
+    },
+    {
+      "mode": "degraded",
+      "mean_fraction": 0.9259274686215706
+    },
+    {
+      "mode": "fallback",
+      "mean_fraction": 0.0
+    },
+    {
+      "mode": "minimal_risk",
+      "mean_fraction": 0.007428079529045874
+    }
+  ],
+  "wilcoxon_w": 0.0,
+  "wilcoxon_p": null,
+  "bootstrap_diff_max_cm": [
+    0.0,
+    0.0,
+    0.0
+  ],
+  "bootstrap_diff_rms_cm": [
+    0.0,
+    0.0,
+    0.0
+  ]
+}

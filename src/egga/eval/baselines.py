@@ -46,9 +46,12 @@ def run_scenario(controller: str, spec: dict[str, Any]) -> ClosedLoopResult:
 
 
 def evaluate_set(
-    controllers: tuple[str, ...], set_name: str, limit: int | None = None
+    controllers: tuple[str, ...],
+    set_name: str,
+    limit: int | None = None,
+    unlock_test: bool = False,
 ) -> pd.DataFrame:
-    specs = load_scenarios(set_name)
+    specs = load_scenarios(set_name, unlock_test=unlock_test)
     if limit is not None:
         specs = specs[:limit]
     meta = provenance()

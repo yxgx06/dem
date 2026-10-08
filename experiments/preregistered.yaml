@@ -1,0 +1,45 @@
+version: 1
+protocol_id: "EGGA-PHASE7-PREREGISTRATION"
+pre_unlock_commit_sha: "e2d3479"
+test_set_hash: "3ef264c5954f72477e68d5b8357134a5e37aeef3921abef6fee52273b1e27aac"
+registered_timestamp: "2026-10-08T20:18:00+05:30"
+unlocked_for: "Phase 7 Final Held-Out Evaluation"
+
+hypotheses:
+  H1:
+    statement: "B5 (Envelope-Guarded RL) experiences 0 catastrophic divergences across all 48 held-out test scenarios, proving safety envelope preservation."
+    expected_outcome: "diverged == 0"
+  H2:
+    statement: "B3 (Unsupervised RL ablation) experiences >= 1 catastrophic divergence on the held-out test set under unmodeled friction and latency variations, proving supervisor necessity."
+    expected_outcome: "diverged >= 1"
+  H3:
+    statement: "B5 achieves non-inferior tracking error compared to B4, maintaining max lateral error within envelope bounds (< 50 cm) across all non-divergent scenarios."
+    expected_outcome: "p95_of_max_cm < 50.0"
+
+evaluation_protocol:
+  candidate: "b5_rl_supervised"
+  baseline: "b4_supervised"
+  ablation: "b3_rl_unsupervised"
+  comparators:
+    - "b0_pid_ff"
+    - "b1_pd_ff"
+  dataset: "test"
+  n_scenarios: 48
+  metrics:
+    - "diverged"
+    - "max_abs_ey_cm"
+    - "rms_ey_cm"
+    - "progress_fraction"
+    - "mean_speed_mps"
+    - "utilisation_over_frac"
+  statistical_tests:
+    wilcoxon:
+      test: "two-sided paired Wilcoxon signed-rank test"
+      metric: "max_abs_ey_cm"
+      alpha: 0.05
+    bootstrap:
+      method: "percentile bootstrap (1,000 resamples)"
+      metrics:
+        - "max_abs_ey_cm diff (B5 - B4)"
+        - "rms_ey_cm diff (B5 - B4)"
+      confidence_level: 0.95

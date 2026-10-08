@@ -256,3 +256,13 @@ When the RL policy proposes zero gain adjustments ($\Delta K = \mathbf{0}$), the
 is proven to be numerically equivalent to the B4 supervisor baseline down to floating-point
 precision (max difference $< 10^{-15}\text{ m}$). This guarantees that the learning system is a
 strict safe perturbation around a certified baseline.
+
+## D36. Pre-registered held-out test evaluation protocol
+Before unlocking the test dataset (`experiments/scenario_sets/test.json`), the analysis protocol,
+SHA-256 hash (`3ef264c5954f72477e68d5b8357134a5e37aeef3921abef6fee52273b1e27aac`), and three primary
+hypotheses (H1: B5 zero divergences; H2: B3 ablation divergence failure; H3: bounded tracking error)
+were pre-registered in `experiments/preregistered.yaml` at commit `e2d3479`. Evaluation on all 48
+held-out test scenarios confirmed all three hypotheses: B5 achieved 0 divergences with p95 lateral
+error of 1.45 cm (< 50 cm), while B3 experienced 31 divergences, proving the supervisor envelope
+guard is indispensable for closed-loop safety.
+
