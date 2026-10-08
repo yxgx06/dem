@@ -126,6 +126,8 @@ def main() -> int:
                 "tests/test_envelope.py",
                 "tests/test_supervisor_properties.py",
                 "tests/redteam/test_supervisor_redteam.py",
+                "tests/test_friction_circle.py",
+                "tests/test_jackknife_guard.py",
             ],
         )
         return pipeline.print_summary()
@@ -148,7 +150,7 @@ def main() -> int:
     # Step 1: Linting
     pipeline.run_step(
         "Code Linting (Ruff)",
-        [py, "-m", "ruff", "check", "src", "tests", "tools", "scripts"],
+        [py, "-m", "ruff", "check", "src", "tests", "tools", "scripts", "tooling"],
     )
 
     # Step 2: Strict Type Checking
@@ -161,8 +163,13 @@ def main() -> int:
             "--strict",
             "src/egga/supervisor/",
             "src/egga/estimation/",
+            "src/egga/plant/articulated.py",
             "tools/claim_auditor.py",
             "scripts/reproduce.py",
+            "tooling/studio/server.py",
+            "tooling/ros2/egga_supervisor_ros2/egga_supervisor_ros2/supervisor_node.py",
+            "tests/test_articulated_plant.py",
+            "tests/test_ros2_controller.py",
         ],
     )
 
@@ -196,6 +203,8 @@ def main() -> int:
                 "tests/test_envelope.py",
                 "tests/test_supervisor_properties.py",
                 "tests/redteam/test_supervisor_redteam.py",
+                "tests/test_friction_circle.py",
+                "tests/test_jackknife_guard.py",
             ],
         )
 

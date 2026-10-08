@@ -33,17 +33,17 @@ jobs:
 
       - name: Lint codebase (Ruff)
         run: |
-          ruff check src tests tools scripts
+          ruff check src tests tools scripts tooling
 
       - name: Strict Static Type Checking (Mypy)
         run: |
-          mypy --strict src/egga/supervisor/ src/egga/estimation/ tools/claim_auditor.py scripts/reproduce.py
+          mypy --strict src/egga/supervisor/ src/egga/estimation/ src/egga/plant/articulated.py tools/claim_auditor.py scripts/reproduce.py tooling/studio/server.py tooling/ros2/egga_supervisor_ros2/egga_supervisor_ros2/supervisor_node.py tests/test_articulated_plant.py tests/test_ros2_controller.py
 
       - name: Build ANSI C99 Embedded Shared Library
         run: |
           gcc -Wall -Wextra -Werror -pedantic -std=c99 -O3 -shared -fPIC \
             -Isrc/c \
-            src/c/actor.c src/c/supervisor.c src/c/supervisor_envelope_data.c \
+            src/c/actor.c src/c/supervisor.c src/c/supervisor_envelope_data.c src/c/friction_circle.c src/c/jackknife_guard.c \
             -o src/c/libegga.so
 
       - name: Verify Supervisor 100.00% Branch Coverage
@@ -52,7 +52,9 @@ jobs:
             tests/test_supervisor.py \
             tests/test_envelope.py \
             tests/test_supervisor_properties.py \
-            tests/redteam/test_supervisor_redteam.py
+            tests/redteam/test_supervisor_redteam.py \
+            tests/test_friction_circle.py \
+            tests/test_jackknife_guard.py
 
       - name: Verify C99 / Python Bit-Exact Equivalence
         run: |

@@ -16,6 +16,8 @@ def build_c_lib() -> None:
         str(c_dir / "actor.c"),
         str(c_dir / "supervisor.c"),
         str(c_dir / "supervisor_envelope_data.c"),
+        str(c_dir / "friction_circle.c"),
+        str(c_dir / "jackknife_guard.c"),
     ]
     compiler = "gcc" if shutil.which("gcc") else ("clang" if shutil.which("clang") else None)
     if compiler is None:
@@ -216,3 +218,153 @@ def py_config_to_c(py_cfg: Any) -> CEggaConfig:
     c_cfg.steer_hw_max = float(py_cfg.steer_hw_max)
     c_cfg.steer_rate_hw_max = float(py_cfg.steer_rate_hw_max)
     return c_cfg
+
+
+class CFrictionDemand(ctypes.Structure):
+    _fields_ = [
+        ("ax_req", ctypes.c_float),
+        ("ay_req", ctypes.c_float),
+        ("mu", ctypes.c_float),
+        ("gravity", ctypes.c_float),
+        ("safety_factor", ctypes.c_float),
+        ("policy", ctypes.c_int32),
+    ]
+
+
+class CFrictionAllocated(ctypes.Structure):
+    _fields_ = [
+        ("ax_safe", ctypes.c_float),
+        ("ay_safe", ctypes.c_float),
+        ("utilisation", ctypes.c_float),
+        ("is_clamped", ctypes.c_int32),
+        ("clamped_axis", ctypes.c_int32),
+        ("delta_max_coupled", ctypes.c_float),
+    ]
+
+
+def call_c_friction_circle(
+    ax_req: float,
+    ay_req: float,
+    mu: float,
+    gravity: float,
+    safety_factor: float,
+    policy: int,
+    speed: float,
+    wheelbase: float,
+    steer_hw_max: float,
+) -> CFrictionAllocated:
+    lib = load_c_lib()
+    lib.egga_allocate_friction_circle.argtypes = [
+        ctypes.POINTER(CFrictionDemand),
+        ctypes.c_float,
+        ctypes.c_float,
+        ctypes.c_float,
+        ctypes.POINTER(CFrictionAllocated),
+    ]
+    lib.egga_allocate_friction_circle.restype = None
+
+    demand = CFrictionDemand(
+        ax_req=float(ax_req),
+        ay_req=float(ay_req),
+        mu=float(mu),
+        gravity=float(gravity),
+        safety_factor=float(safety_factor),
+        policy=int(policy),
+    )
+    out = CFrictionAllocated()
+    lib.egga_allocate_friction_circle(
+        ctypes.byref(demand),
+        ctypes.c_float(speed),
+        ctypes.c_float(wheelbase),
+        ctypes.c_float(steer_hw_max),
+        ctypes.byref(out),
+    )
+    return out
+
+
+class CJackknifeConfig(ctypes.Structure):
+    _fields_ = [
+        ("l2", ctypes.c_float),
+        ("tau_air", ctypes.c_float),
+        ("gravity", ctypes.c_float),
+        ("ltr_warning", ctypes.c_float),
+        ("ltr_critical", ctypes.c_float),
+        ("steer_rate_max", ctypes.c_float),
+        ("min_theta_crit", ctypes.c_float),
+        ("max_theta_crit", ctypes.c_float),
+    ]
+
+
+class CJackknifeInputs(ctypes.Structure):
+    _fields_ = [
+        ("theta_a", ctypes.c_float),
+        ("theta_a_dot", ctypes.c_float),
+        ("vx", ctypes.c_float),
+        ("mu", ctypes.c_float),
+        ("ltr", ctypes.c_float),
+        ("steer_cmd_req", ctypes.c_float),
+        ("steer_rate_req", ctypes.c_float),
+    ]
+
+
+class CJackknifeOutputs(ctypes.Structure):
+    _fields_ = [
+        ("theta_crit", ctypes.c_float),
+        ("h_jackknife", ctypes.c_float),
+        ("is_jackknife_critical", ctypes.c_int32),
+        ("is_rollover_critical", ctypes.c_int32),
+        ("steer_rate_safe", ctypes.c_float),
+        ("steer_cmd_safe", ctypes.c_float),
+        ("trailer_brake_pressure", ctypes.c_float),
+        ("status_flags", ctypes.c_int32),
+    ]
+
+
+def call_c_jackknife_guard(
+    l2: float,
+    tau_air: float,
+    gravity: float,
+    ltr_warning: float,
+    ltr_critical: float,
+    steer_rate_max: float,
+    min_theta_crit: float,
+    max_theta_crit: float,
+    theta_a: float,
+    theta_a_dot: float,
+    vx: float,
+    mu: float,
+    ltr: float,
+    steer_cmd_req: float,
+    steer_rate_req: float,
+) -> CJackknifeOutputs:
+    lib = load_c_lib()
+    lib.egga_jackknife_guard_step.argtypes = [
+        ctypes.POINTER(CJackknifeConfig),
+        ctypes.POINTER(CJackknifeInputs),
+        ctypes.POINTER(CJackknifeOutputs),
+    ]
+    lib.egga_jackknife_guard_step.restype = None
+
+    cfg = CJackknifeConfig(
+        l2=float(l2),
+        tau_air=float(tau_air),
+        gravity=float(gravity),
+        ltr_warning=float(ltr_warning),
+        ltr_critical=float(ltr_critical),
+        steer_rate_max=float(steer_rate_max),
+        min_theta_crit=float(min_theta_crit),
+        max_theta_crit=float(max_theta_crit),
+    )
+    inp = CJackknifeInputs(
+        theta_a=float(theta_a),
+        theta_a_dot=float(theta_a_dot),
+        vx=float(vx),
+        mu=float(mu),
+        ltr=float(ltr),
+        steer_cmd_req=float(steer_cmd_req),
+        steer_rate_req=float(steer_rate_req),
+    )
+    out = CJackknifeOutputs()
+    lib.egga_jackknife_guard_step(ctypes.byref(cfg), ctypes.byref(inp), ctypes.byref(out))
+    return out
+

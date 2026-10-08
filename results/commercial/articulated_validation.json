@@ -1,0 +1,21 @@
+{
+  "scenario": "Class 8 Tractor-Semitrailer Split-Mu Emergency Avoidance (mu=0.35, v0=80km/h)",
+  "unguarded": {
+    "guarded": false,
+    "jackknifed": false,
+    "rolled_over": false,
+    "max_hitch_angle_deg": 12.28,
+    "max_ltr": 0.413,
+    "interventions": 0,
+    "final_speed_mps": 12.24
+  },
+  "guarded": {
+    "guarded": true,
+    "jackknifed": false,
+    "rolled_over": false,
+    "max_hitch_angle_deg": 12.28,
+    "max_ltr": 0.242,
+    "interventions": 39,
+    "final_speed_mps": 19.68
+  }
+}

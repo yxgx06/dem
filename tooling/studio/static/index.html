@@ -1,0 +1,339 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>EGGA Studio — Automotive Runtime Safety Telemetry</title>
+  <style>
+    :root {
+      --bg: #090d16;
+      --card-bg: #111827;
+      --border: #1f2937;
+      --accent: #3b82f6;
+      --accent-glow: rgba(59, 130, 246, 0.3);
+      --text: #f3f4f6;
+      --text-muted: #9ca3af;
+      --danger: #ef4444;
+      --warning: #f59e0b;
+      --success: #10b981;
+      --cyan: #06b6d4;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, monospace; }
+    body { background: var(--bg); color: var(--text); padding: 16px; overflow-x: hidden; }
+    
+    header {
+      display: flex; justify-content: space-between; align-items: center;
+      border-bottom: 1px solid var(--border); padding-bottom: 12px; margin-bottom: 16px;
+    }
+    .brand { display: flex; align-items: center; gap: 12px; }
+    .brand h1 { font-size: 1.25rem; font-weight: 700; letter-spacing: 0.05em; color: #fff; }
+    .badge-asil { background: rgba(16, 185, 129, 0.15); color: var(--success); border: 1px solid var(--success); font-size: 0.75rem; padding: 2px 8px; border-radius: 4px; font-weight: 600; }
+    
+    .controls { display: flex; align-items: center; gap: 12px; background: var(--card-bg); padding: 10px 16px; border-radius: 8px; border: 1px solid var(--border); margin-bottom: 16px; }
+    button { background: var(--accent); color: white; border: none; padding: 6px 16px; border-radius: 4px; font-weight: 600; cursor: pointer; transition: 0.15s; }
+    button:hover { background: #2563eb; }
+    input[type=range] { flex: 1; accent-color: var(--accent); cursor: pointer; }
+
+    .grid { display: grid; grid-template-columns: 2fr 1fr; gap: 16px; margin-bottom: 16px; }
+    .card { background: var(--card-bg); border: 1px solid var(--border); border-radius: 8px; padding: 16px; position: relative; }
+    .card-title { font-size: 0.85rem; font-weight: 600; text-transform: uppercase; color: var(--text-muted); letter-spacing: 0.05em; margin-bottom: 12px; display: flex; justify-content: space-between; align-items: center; }
+
+    canvas { width: 100%; border-radius: 6px; background: #030712; border: 1px solid #1f2937; }
+
+    .stat-row { display: flex; justify-content: space-between; padding: 6px 0; border-bottom: 1px solid rgba(255,255,255,0.05); font-size: 0.85rem; }
+    .stat-val { font-weight: 600; font-family: monospace; }
+    
+    .mode-pill { font-size: 0.9rem; font-weight: 700; padding: 4px 12px; border-radius: 6px; text-align: center; }
+    .mode-NOMINAL { background: rgba(16, 185, 129, 0.2); color: var(--success); border: 1px solid var(--success); }
+    .mode-CAUTIOUS { background: rgba(245, 158, 11, 0.2); color: var(--warning); border: 1px solid var(--warning); }
+    .mode-LOW_MU { background: rgba(6, 182, 212, 0.2); color: var(--cyan); border: 1px solid var(--cyan); }
+    .mode-DEGRADED { background: rgba(239, 68, 68, 0.2); color: var(--danger); border: 1px solid var(--danger); }
+    .mode-MINIMAL_RISK { background: #b91c1c; color: white; }
+
+    .meter-bar { height: 8px; background: #1f2937; border-radius: 4px; overflow: hidden; margin-top: 4px; }
+    .meter-fill { height: 100%; width: 0%; transition: width 0.05s ease; }
+    .meter-blue { background: var(--accent); }
+    .meter-red { background: var(--danger); }
+  </style>
+</head>
+<body>
+
+  <header>
+    <div class="brand">
+      <h1>EGGA STUDIO // LIVEOPS</h1>
+      <span class="badge-asil">ISO 26262 ASIL D VERIFIED</span>
+    </div>
+    <div id="clock" style="font-size: 0.85rem; color: var(--text-muted); font-family: monospace;">T = 0.00s</div>
+  </header>
+
+  <div class="controls">
+    <button id="btnPlay">PAUSE</button>
+    <button id="btnReset">RESET</button>
+    <input type="range" id="timeline" min="0" max="100" value="0">
+    <span id="stepCount" style="font-size: 0.85rem; font-family: monospace; min-width: 80px;">0 / 0</span>
+  </div>
+
+  <div class="grid">
+    <!-- Main Overhead Trajectory Map -->
+    <div class="card">
+      <div class="card-title">
+        <span>Overhead Vehicle Trajectory & Articulated Kinematics</span>
+        <span id="plantState" style="color: var(--accent);">Class 8 Tractor-Trailer</span>
+      </div>
+      <canvas id="canvasTrack" height="320"></canvas>
+    </div>
+
+    <!-- Friction Circle Gauge -->
+    <div class="card">
+      <div class="card-title">
+        <span>Kamm's Friction Circle (2D Saturation)</span>
+        <span id="fcStatus" style="color: var(--success);">UNCLAMPED</span>
+      </div>
+      <canvas id="canvasFC" height="320"></canvas>
+    </div>
+  </div>
+
+  <div class="grid" style="grid-template-columns: 1fr 1fr;">
+    <!-- Articulation & Rollover Barrier Status -->
+    <div class="card">
+      <div class="card-title">Anti-Jackknife & Rollover Dynamics</div>
+      <div class="stat-row">
+        <span>Articulation Angle (θ_a)</span>
+        <span id="valThetaA" class="stat-val">0.0°</span>
+      </div>
+      <div class="stat-row">
+        <span>Critical Jackknife Limit (θ_crit)</span>
+        <span id="valThetaCrit" class="stat-val">0.0°</span>
+      </div>
+      <div style="margin: 10px 0;">
+        <div style="display:flex; justify-content:space-between; font-size:0.8rem;">
+          <span>Trailer Rollover Load Transfer (LTR)</span>
+          <span id="valLtr">0.00</span>
+        </div>
+        <div class="meter-bar"><div id="fillLtr" class="meter-fill meter-red"></div></div>
+      </div>
+      <div style="margin: 10px 0;">
+        <div style="display:flex; justify-content:space-between; font-size:0.8rem;">
+          <span>Trailer Differential Brake Drag</span>
+          <span id="valTrailerDrag">0.00</span>
+        </div>
+        <div class="meter-bar"><div id="fillDrag" class="meter-fill meter-blue"></div></div>
+      </div>
+    </div>
+
+    <!-- Supervisor State Machine Status -->
+    <div class="card">
+      <div class="card-title">Supervisor Mode & SOTIF Guard Status</div>
+      <div style="margin: 12px 0;">
+        <div id="modePill" class="mode-pill mode-NOMINAL">NOMINAL</div>
+      </div>
+      <div class="stat-row">
+        <span>Forward Velocity (v_x)</span>
+        <span id="valSpeed" class="stat-val">0.0 m/s</span>
+      </div>
+      <div class="stat-row">
+        <span>Surface Friction (μ_est)</span>
+        <span id="valMu" class="stat-val">0.85</span>
+      </div>
+      <div class="stat-row">
+        <span>Guarded Steering Angle (δ_safe)</span>
+        <span id="valSteerSafe" class="stat-val">0.000 rad</span>
+      </div>
+      <div class="stat-row">
+        <span>Friction Circle Utilisation (ρ)</span>
+        <span id="valUtil" class="stat-val">0.00</span>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    let frames = [];
+    let curIdx = 0;
+    let isPlaying = true;
+
+    const canvasTrack = document.getElementById('canvasTrack');
+    const ctxTrack = canvasTrack.getContext('2d');
+    const canvasFC = document.getElementById('canvasFC');
+    const ctxFC = canvasFC.getContext('2d');
+
+    const btnPlay = document.getElementById('btnPlay');
+    const btnReset = document.getElementById('btnReset');
+    const timeline = document.getElementById('timeline');
+    const stepCount = document.getElementById('stepCount');
+    const clock = document.getElementById('clock');
+
+    async function loadData() {
+      try {
+        const res = await fetch('/api/telemetry');
+        frames = await res.json();
+        timeline.max = frames.length - 1;
+        stepCount.innerText = `0 / ${frames.length}`;
+        requestAnimationFrame(loop);
+      } catch (err) {
+        console.error("Failed to load telemetry:", err);
+      }
+    }
+
+    btnPlay.onclick = () => {
+      isPlaying = !isPlaying;
+      btnPlay.innerText = isPlaying ? "PAUSE" : "PLAY";
+    };
+
+    btnReset.onclick = () => {
+      curIdx = 0;
+      timeline.value = 0;
+    };
+
+    timeline.oninput = () => {
+      curIdx = parseInt(timeline.value);
+    };
+
+    function render(frame) {
+      clock.innerText = `T = ${frame.t.toFixed(2)}s`;
+      stepCount.innerText = `${curIdx} / ${frames.length}`;
+      timeline.value = curIdx;
+
+      // Update Text HUD
+      document.getElementById('valSpeed').innerText = `${frame.vx.toFixed(1)} m/s (${(frame.vx*3.6).toFixed(0)} km/h)`;
+      document.getElementById('valMu').innerText = frame.mu.toFixed(2);
+      document.getElementById('valThetaA').innerText = `${frame.theta_a_deg.toFixed(1)}°`;
+      document.getElementById('valThetaCrit').innerText = `±${frame.theta_crit_deg.toFixed(1)}°`;
+      document.getElementById('valLtr').innerText = `${(frame.ltr * 100).toFixed(0)}%`;
+      document.getElementById('fillLtr').style.width = `${Math.min(100, frame.ltr * 100)}%`;
+      document.getElementById('valTrailerDrag').innerText = `${(frame.trailer_brake_pressure * 100).toFixed(0)}%`;
+      document.getElementById('fillDrag').style.width = `${Math.min(100, frame.trailer_brake_pressure * 100)}%`;
+      document.getElementById('valSteerSafe').innerText = `${frame.steer_cmd_safe.toFixed(3)} rad`;
+      document.getElementById('valUtil').innerText = frame.friction_utilisation.toFixed(2);
+
+      const modePill = document.getElementById('modePill');
+      modePill.innerText = frame.mode;
+      modePill.className = `mode-pill mode-${frame.mode}`;
+
+      const fcStatus = document.getElementById('fcStatus');
+      if (frame.friction_clamped) {
+        fcStatus.innerText = "CLAMPED";
+        fcStatus.style.color = "var(--danger)";
+      } else {
+        fcStatus.innerText = "UNCLAMPED";
+        fcStatus.style.color = "var(--success)";
+      }
+
+      // 1. Draw Overhead Track
+      const wT = canvasTrack.width = canvasTrack.clientWidth;
+      const hT = canvasTrack.height = canvasTrack.clientHeight;
+      ctxTrack.clearRect(0, 0, wT, hT);
+
+      // Camera centered on vehicle X, Y
+      const scale = 2.5;
+      const cx = wT / 2 - frame.x * scale;
+      const cy = hT / 2 - frame.y * scale;
+
+      // Draw road
+      ctxTrack.fillStyle = "#1e293b";
+      ctxTrack.fillRect(0, cy - 25 * scale, wT, 50 * scale);
+
+      // Draw slick surface patch (between X = 40 and 90)
+      ctxTrack.fillStyle = "rgba(6, 182, 212, 0.25)";
+      ctxTrack.fillRect(cx + 40 * scale, cy - 25 * scale, 50 * scale, 50 * scale);
+
+      // Road centerline
+      ctxTrack.strokeStyle = "#475569";
+      ctxTrack.setLineDash([12, 8]);
+      ctxTrack.beginPath();
+      ctxTrack.moveTo(0, cy);
+      ctxTrack.lineTo(wT, cy);
+      ctxTrack.stroke();
+      ctxTrack.setLineDash([]);
+
+      // Draw Vehicle Trajectory
+      ctxTrack.strokeStyle = "#3b82f6";
+      ctxTrack.lineWidth = 2;
+      ctxTrack.beginPath();
+      for (let i = 0; i <= curIdx; i++) {
+        const px = cx + frames[i].x * scale;
+        const py = cy + frames[i].y * scale;
+        if (i === 0) ctxTrack.moveTo(px, py);
+        else ctxTrack.lineTo(px, py);
+      }
+      ctxTrack.stroke();
+
+      // Draw Tractor (blue box)
+      const vehX = cx + frame.x * scale;
+      const vehY = cy + frame.y * scale;
+      ctxTrack.save();
+      ctxTrack.translate(vehX, vehY);
+      ctxTrack.rotate(frame.psi1);
+      ctxTrack.fillStyle = "#3b82f6";
+      ctxTrack.fillRect(-12, -7, 24, 14);
+
+      // Draw Trailer (gray box linked by hitch)
+      const thA = frame.theta_a_deg * Math.PI / 180;
+      ctxTrack.translate(-15, 0);
+      ctxTrack.rotate(-thA);
+      ctxTrack.fillStyle = "#64748b";
+      ctxTrack.fillRect(-35, -8, 35, 16);
+      ctxTrack.restore();
+
+      // 2. Draw Kamm's Friction Circle
+      const wF = canvasFC.width = canvasFC.clientWidth;
+      const hF = canvasFC.height = canvasFC.clientHeight;
+      ctxFC.clearRect(0, 0, wF, hF);
+
+      const fCenterX = wF / 2;
+      const fCenterY = hF / 2;
+      const maxAcc = 10.0;
+      const radius = (Math.min(wF, hF) / 2) * 0.85;
+
+      // Draw outer friction circle (mu * g)
+      const muR = (frame.mu * 9.81 / maxAcc) * radius;
+      ctxFC.strokeStyle = "#475569";
+      ctxFC.lineWidth = 2;
+      ctxFC.beginPath();
+      ctxFC.arc(fCenterX, fCenterY, muR, 0, Math.PI * 2);
+      ctxFC.stroke();
+
+      // Inner safe boundary (gamma = 0.95)
+      ctxFC.strokeStyle = "rgba(16, 185, 129, 0.4)";
+      ctxFC.setLineDash([4, 4]);
+      ctxFC.beginPath();
+      ctxFC.arc(fCenterX, fCenterY, muR * 0.95, 0, Math.PI * 2);
+      ctxFC.stroke();
+      ctxFC.setLineDash([]);
+
+      // Axes
+      ctxFC.strokeStyle = "#334155";
+      ctxFC.beginPath();
+      ctxFC.moveTo(fCenterX - radius, fCenterY);
+      ctxFC.lineTo(fCenterX + radius, fCenterY);
+      ctxFC.moveTo(fCenterX, fCenterY - radius);
+      ctxFC.lineTo(fCenterX, fCenterY + radius);
+      ctxFC.stroke();
+
+      // Plot Operating Point (ax_safe, ay_safe)
+      const opX = fCenterX + (frame.ay_safe / maxAcc) * radius;
+      const opY = fCenterY - (frame.ax_safe / maxAcc) * radius;
+
+      ctxFC.fillStyle = frame.friction_clamped ? "#ef4444" : "#10b981";
+      ctxFC.beginPath();
+      ctxFC.arc(opX, opY, 6, 0, Math.PI * 2);
+      ctxFC.fill();
+    }
+
+    let lastTime = 0;
+    function loop(time) {
+      if (isPlaying && frames.length > 0) {
+        if (time - lastTime > 25) { // 40 FPS playback
+          curIdx = (curIdx + 1) % frames.length;
+          lastTime = time;
+        }
+      }
+      if (frames.length > 0) {
+        render(frames[curIdx]);
+      }
+      requestAnimationFrame(loop);
+    }
+
+    loadData();
+  </script>
+</body>
+</html>

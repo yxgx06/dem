@@ -275,6 +275,68 @@ class ClaimAuditor:
             "100.000% exact mode match" in final_text, "100.000% mode match in final report"
         )
 
+    def audit_commercial_expansion(self) -> None:
+        print("\n--- Auditing Commercial Product Expansion Deliverables ---")
+        self.check(
+            (REPO_ROOT / "src" / "egga" / "supervisor" / "friction_circle.py").exists(),
+            "2D Friction Circle Governor implementation exists (Python)",
+        )
+        self.check(
+            (REPO_ROOT / "src" / "c" / "friction_circle.c").exists()
+            and (REPO_ROOT / "src" / "c" / "friction_circle.h").exists(),
+            "2D Friction Circle Governor implementation exists (C99)",
+        )
+        self.check(
+            (REPO_ROOT / "src" / "egga" / "plant" / "articulated.py").exists(),
+            "4-DOF Tractor-Semitrailer Articulated Dynamics exists (Python)",
+        )
+        self.check(
+            (REPO_ROOT / "src" / "egga" / "supervisor" / "jackknife_guard.py").exists(),
+            "Anti-Jackknife & Anti-Rollover Guard exists (Python)",
+        )
+        self.check(
+            (REPO_ROOT / "src" / "c" / "jackknife_guard.c").exists()
+            and (REPO_ROOT / "src" / "c" / "jackknife_guard.h").exists(),
+            "Anti-Jackknife & Anti-Rollover Guard exists (C99)",
+        )
+        self.check(
+            (REPO_ROOT / "tooling" / "simulink" / "egga_supervisor_sfun.c").exists(),
+            "MATLAB/Simulink S-Function Level-2 block exists",
+        )
+        self.check(
+            (
+                REPO_ROOT
+                / "tooling"
+                / "ros2"
+                / "egga_supervisor_ros2"
+                / "egga_supervisor_ros2"
+                / "supervisor_node.py"
+            ).exists(),
+            "ROS 2 Controller Node package exists",
+        )
+        self.check(
+            (REPO_ROOT / "tooling" / "studio" / "server.py").exists()
+            and (REPO_ROOT / "tooling" / "studio" / "static" / "index.html").exists(),
+            "EGGA Studio Telemetry Server & HTML5 HUD exist",
+        )
+        decisions_text = (DOCS_DIR / "DECISIONS.md").read_text(encoding="utf-8")
+        self.check(
+            "## D40. Commercial Product Expansion" in decisions_text,
+            "Decision D40 documented in docs/DECISIONS.md",
+        )
+        self.check(
+            (REPO_ROOT / "experiments" / "verify_articulated_safety.py").exists(),
+            "Articulated commercial validation script exists",
+        )
+        self.check(
+            (REPO_ROOT / "docs" / "commercial" / "commercial_validation_report.md").exists(),
+            "Commercial validation report exists",
+        )
+        self.check(
+            (REPO_ROOT / "results" / "commercial" / "articulated_validation.json").exists(),
+            "Commercial validation results JSON exists",
+        )
+
     def run(self) -> int:
         print("=================================================================")
         print("                 EGGA CLAIM & EVIDENCE AUDITOR                  ")
@@ -286,6 +348,7 @@ class ClaimAuditor:
         self.audit_phase7_claims()
         self.audit_phase8_claims()
         self.audit_final_synthesis_report()
+        self.audit_commercial_expansion()
 
         print("\n=================================================================")
         print(f"Audit Summary: {self.passed_checks} / {self.total_checks} checks passed.")

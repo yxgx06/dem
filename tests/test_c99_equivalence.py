@@ -162,3 +162,114 @@ def test_supervisor_c99_matches_python_supervisor_step_by_step() -> None:
         for i in range(4):
             diff_g = abs(c_out.gains[i] - py_out.gains[i])
             assert diff_g < 1e-4, f"Step {step_idx}: gain[{i}] mismatch {diff_g}"
+
+
+def test_friction_circle_c99_matches_python() -> None:
+    from egga.c_bridge import call_c_friction_circle
+    from egga.supervisor.friction_circle import (
+        FrictionCirclePolicy,
+        FrictionDemand,
+        allocate_friction_circle,
+    )
+
+    rng = np.random.default_rng(2026)
+    policies = [
+        FrictionCirclePolicy.STEERING_PRIORITY,
+        FrictionCirclePolicy.BALANCED,
+        FrictionCirclePolicy.BRAKING_PRIORITY,
+    ]
+
+    for _ in range(1000):
+        policy = policies[int(rng.integers(0, 3))]
+        ax = float(rng.uniform(-10.0, 10.0))
+        ay = float(rng.uniform(-10.0, 10.0))
+        mu = float(rng.uniform(0.15, 0.95))
+        speed = float(rng.uniform(1.0, 25.0))
+        wheelbase = float(rng.uniform(2.0, 4.0))
+
+        py_demand = FrictionDemand(
+            ax_req=ax,
+            ay_req=ay,
+            mu=mu,
+            policy=policy,
+        )
+        py_alloc = allocate_friction_circle(py_demand, speed=speed, wheelbase=wheelbase)
+
+        c_alloc = call_c_friction_circle(
+            ax_req=ax,
+            ay_req=ay,
+            mu=mu,
+            gravity=9.80665,
+            safety_factor=0.95,
+            policy=int(policy),
+            speed=speed,
+            wheelbase=wheelbase,
+            steer_hw_max=0.60,
+        )
+
+        assert abs(c_alloc.ax_safe - py_alloc.ax_safe) < 1e-4
+        assert abs(c_alloc.ay_safe - py_alloc.ay_safe) < 1e-4
+        assert abs(c_alloc.utilisation - py_alloc.utilisation) < 1e-4
+        assert bool(c_alloc.is_clamped) == py_alloc.is_clamped
+        assert abs(c_alloc.delta_max_coupled - py_alloc.delta_max_coupled) < 1e-4
+
+
+def test_jackknife_guard_c99_matches_python() -> None:
+    from egga.c_bridge import call_c_jackknife_guard
+    from egga.supervisor.jackknife_guard import (
+        JackknifeConfig,
+        JackknifeInputs,
+        step_jackknife_guard,
+    )
+
+    rng = np.random.default_rng(2027)
+    cfg = JackknifeConfig()
+
+    for _ in range(1000):
+        th_a = float(rng.uniform(-0.6, 0.6))
+        th_a_dot = float(rng.uniform(-1.0, 1.0))
+        vx = float(rng.uniform(2.0, 30.0))
+        mu = float(rng.uniform(0.1, 0.95))
+        ltr = float(rng.uniform(0.0, 1.0))
+        steer_cmd = float(rng.uniform(-0.5, 0.5))
+        steer_rate = float(rng.uniform(-0.6, 0.6))
+
+        py_in = JackknifeInputs(
+            theta_a=th_a,
+            theta_a_dot=th_a_dot,
+            vx=vx,
+            mu=mu,
+            ltr=ltr,
+            steer_cmd_req=steer_cmd,
+            steer_rate_req=steer_rate,
+        )
+        py_out = step_jackknife_guard(cfg, py_in)
+
+        c_out = call_c_jackknife_guard(
+            l2=cfg.l2,
+            tau_air=cfg.tau_air,
+            gravity=cfg.gravity,
+            ltr_warning=cfg.ltr_warning,
+            ltr_critical=cfg.ltr_critical,
+            steer_rate_max=cfg.steer_rate_max,
+            min_theta_crit=cfg.min_theta_crit,
+            max_theta_crit=cfg.max_theta_crit,
+            theta_a=th_a,
+            theta_a_dot=th_a_dot,
+            vx=vx,
+            mu=mu,
+            ltr=ltr,
+            steer_cmd_req=steer_cmd,
+            steer_rate_req=steer_rate,
+        )
+
+        assert abs(c_out.theta_crit - py_out.theta_crit) < 1e-4
+        assert abs(c_out.h_jackknife - py_out.h_jackknife) < 1e-4
+        assert bool(c_out.is_jackknife_critical) == py_out.is_jackknife_critical
+        assert bool(c_out.is_rollover_critical) == py_out.is_rollover_critical
+        assert abs(c_out.steer_rate_safe - py_out.steer_rate_safe) < 1e-4
+        assert abs(c_out.steer_cmd_safe - py_out.steer_cmd_safe) < 1e-4
+        assert abs(c_out.trailer_brake_pressure - py_out.trailer_brake_pressure) < 1e-4
+        assert c_out.status_flags == py_out.status_flags
+
+

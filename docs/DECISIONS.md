@@ -315,3 +315,27 @@ automated, continuously tested reproduction infrastructure:
 3. **Comprehensive Engineering Synthesis**: Authored `docs/FINAL_SYNTHESIS_REPORT.md` synthesizing all 10
    phases, cataloging empirical benchmark tables across all 120 scenarios, embedded hardware profiling,
    and formal invariant verification statements.
+
+## D40. Commercial Product Expansion: Coupled 2D Friction Circle, Heavy Commercial Articulation Dynamics, Multi-Platform Tooling, and Live Telemetry Studio
+To address commercial autonomous trucking and automotive OEM market requirements, EGGA was expanded
+into an industry-grade runtime safety product:
+1. **Coupled 2D Friction Circle Governor**: Expanded envelope enforcement from 1D lateral steering to
+   coupled 2D longitudinal/lateral dynamics under Kamm's friction circle ($\rho = \sqrt{a_x^2 + a_y^2} \le \gamma \mu g$).
+   Implemented in Python (`src/egga/supervisor/friction_circle.py`) and ANSI C99 (`src/c/friction_circle.c`, `src/c/friction_circle.h`)
+   with three priority allocation strategies (`STEERING_PRIORITY`, `BALANCED`, `BRAKING_PRIORITY`).
+2. **Articulated Commercial Vehicle Dynamics & Anti-Jackknife / Anti-Rollover Guard**:
+   Engineered a 4-DOF tractor-semitrailer plant (`src/egga/plant/articulated.py`) incorporating fifth-wheel hitch kinematics
+   ($\theta_a, \dot{\theta}_a$), pneumatic air brake latency ($\tau_{\text{air}}$), and trailer rollover Load Transfer Ratio ($LTR$).
+   Formulated the `JackknifeGuard` in Python (`src/egga/supervisor/jackknife_guard.py`) and ANSI C99 (`src/c/jackknife_guard.c`, `src/c/jackknife_guard.h`)
+   evaluating critical angle limits $\theta_{\text{crit}}(v, \mu)$, predictive barrier functions
+   $h_{\text{jackknife}} = \theta_{\text{crit}} - (|\theta_a| + \tau_{\text{air}} |\dot{\theta}_a|)$, differential trailer drag
+   intervention (parachute effect), and roll-rate damping.
+3. **Developer Tooling Wedge (Simulink & ROS 2)**:
+   - Authored MATLAB/Simulink Level-2 C MEX S-Function (`tooling/simulink/egga_supervisor_sfun.c` and `tooling/simulink/build_mex.m`)
+     retaining zero dynamic allocation during execution by storing state in persistent Simulink `PWork` pointers.
+   - Engineered an official ROS 2 package (`tooling/ros2/egga_supervisor_ros2/`) providing real-time Odometry/Twist intervention
+     and diagnostic publication.
+4. **EGGA Studio Live Web Telemetry & SOTIF Flight Recorder**:
+   - Developed an embedded web server (`tooling/studio/server.py`) and dark-mode automotive HUD (`tooling/studio/static/index.html`)
+     rendering real-time 2D path tracking, Kamm's friction circle headroom, hitch angle limits, and trailer rollover load transfer ($LTR$).
+   - Integrated continuous SOTIF incident recording logging edge-case activations directly to `results/sotif_flight_recorder.jsonl`.
