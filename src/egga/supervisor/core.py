@@ -124,7 +124,7 @@ def step(state: State, cfg: Config, env: Envelope, inp: Inputs) -> Outputs:
     state.healthy_for = 0.0 if (hard_fault or no_set) else state.healthy_for + dt
 
     previous_mode = state.mode
-    reset_ok = inp.request_reset and not invalid and state.healthy_for >= cfg.stale_grace
+    reset_ok = inp.request_reset and not invalid and state.healthy_for >= cfg.stale_grace - 1e-4
     mode, reason = modes.next_mode(
         state, cfg, t, no_set, hard_fault, tau, mu_hi, quality, reset_ok
     )

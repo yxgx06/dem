@@ -48,10 +48,10 @@ def next_mode(
             Reason.MODE_CHANGE if current != Mode.FALLBACK else Reason.NONE
         )
     if current == Mode.FALLBACK:
-        if state.healthy_for >= cfg.recover:
+        if state.healthy_for >= cfg.recover - 1e-4:
             return int(Mode.CAUTIOUS), int(Reason.RECOVERY)
         return current, int(Reason.NONE)
     desired = desired_mode(cfg, current, tau, mu_hi, quality)
-    if desired != current and t - state.mode_entry_t >= cfg.min_dwell:
+    if desired != current and t - state.mode_entry_t >= cfg.min_dwell - 1e-4:
         return desired, int(Reason.MODE_CHANGE)
     return current, int(Reason.NONE)

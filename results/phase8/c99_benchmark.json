@@ -1,0 +1,16 @@
+{
+  "sizeof_state_bytes": 3304,
+  "sizeof_config_bytes": 200,
+  "sizeof_inputs_bytes": 100,
+  "sizeof_outputs_bytes": 40,
+  "actor_params_bytes": 368,
+  "envelope_mask_bytes": 121600,
+  "heap_allocation_bytes": 0,
+  "n_iterations": 100000,
+  "mean_us": 1.460,
+  "p50_us": 1.400,
+  "p90_us": 1.500,
+  "p95_us": 1.700,
+  "p99_us": 2.200,
+  "max_us": 83.300
+}

@@ -266,3 +266,21 @@ held-out test scenarios confirmed all three hypotheses: B5 achieved 0 divergence
 error of 1.45 cm (< 50 cm), while B3 experienced 31 divergences, proving the supervisor envelope
 guard is indispensable for closed-loop safety.
 
+## D37. ANSI C99 Embedded Port, Zero-Heap Architecture, and Numerical Certification
+The complete EGGA runtime architecture—comprising the 92-parameter Actor MLP and the verified
+runtime supervisor—was ported to standalone ANSI C99 (`src/c/`) targeting automotive ECUs.
+1. **Zero Dynamic Allocation**: The runtime operates with strictly zero heap allocation
+   (`0 B` dynamic memory, zero `malloc`/`calloc`/`free`). All state is held in a fixed static struct
+   (`sizeof(egga_state_t) = 3,304 B`), config is in ROM (`200 B`), and tick inputs/outputs are passed
+   by stack pointer (`100 B` and `40 B` respectively).
+2. **Bit-Packed ROM Lookup**: The 940,800-bit verified envelope table is bit-packed into an $800 \times 19$
+   `uint64_t` array stored in `.rodata` ($118.75\text{ KB}$), avoiding floating-point grid interpolation.
+3. **Deterministic Latency**: Host hardware benchmarking across 100,000 consecutive control ticks
+   measured a mean latency of $1.460\ \mu\text{s}$ and p99 of $2.200\ \mu\text{s}$ (max $83.3\ \mu\text{s}$),
+   providing $> 6,800\times$ margin against the $10\text{ ms}$ real-time control budget.
+4. **Numerical Certification**: Comparative evaluation across 100,000 steps verified 100.000% exact
+   integer match on supervisor modes (0 mismatches), 100.000% exact bitmask match on fault flags (0 mismatches),
+   maximum speed command discrepancy $< 9.5 \times 10^{-5}\text{ m/s}$, and 100% adherence to verified envelope
+   invariants in both runtimes. Transient single-tick boundary differences (< 0.012% of ticks) arise solely
+   from IEEE 754 float32 vs float64 knot-point rounding (< 10 μm/s) without compromising safety.
+

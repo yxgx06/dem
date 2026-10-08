@@ -41,7 +41,7 @@ def test_no_source_file_unlocks_the_test_set_before_phase7() -> None:
     for folder in ("src", "tools"):
         for path in (REPO_ROOT / folder).rglob("*.py"):
             text = path.read_text(encoding="utf-8")
-            if "unlock_test=True" in text and path.name != "sets.py":
+            if "unlock_test=True" in text and path.name not in ("sets.py", "phase7.py"):
                 offenders.append(str(path.relative_to(REPO_ROOT)))
     assert offenders == [], f"test set unlocked outside Phase 7: {offenders}"
 

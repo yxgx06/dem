@@ -1,0 +1,12 @@
+{
+  "n_steps": 100000,
+  "elapsed_seconds": 51.24192360008601,
+  "mode_mismatches": 0,
+  "flags_mismatches": 0,
+  "verified_mismatches": 11,
+  "forced_jump_mismatches": 36,
+  "max_diff_speed_mps": 9.427794686445168e-05,
+  "max_diff_steer_lim_rad": 1.261491511805879e-07,
+  "max_diff_rate_lim_rps": 0.1742222631620982,
+  "max_diff_gains": 1.2000000476837158
+}
