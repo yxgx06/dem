@@ -1,0 +1,67 @@
+name: EGGA Continuous Integration & Formal Safety Gate
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  verify:
+    name: Verify Mathematical Invariants, Embedded C99, & Safety Gates
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python 3.12
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: "pip"
+
+      - name: Install system dependencies (GCC build toolchain)
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y build-essential gcc
+
+      - name: Install Python dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -e .
+          pip install ruff mypy pytest pytest-cov hypothesis
+
+      - name: Lint codebase (Ruff)
+        run: |
+          ruff check src tests tools scripts
+
+      - name: Strict Static Type Checking (Mypy)
+        run: |
+          mypy --strict src/egga/supervisor/ src/egga/estimation/ tools/claim_auditor.py scripts/reproduce.py
+
+      - name: Build ANSI C99 Embedded Shared Library
+        run: |
+          gcc -Wall -Wextra -Werror -pedantic -std=c99 -O3 -shared -fPIC \
+            -Isrc/c \
+            src/c/actor.c src/c/supervisor.c src/c/supervisor_envelope_data.c \
+            -o src/c/libegga.so
+
+      - name: Verify Supervisor 100.00% Branch Coverage
+        run: |
+          pytest --cov=src/egga/supervisor --cov-report=term-missing --cov-fail-under=100 \
+            tests/test_supervisor.py \
+            tests/test_envelope.py \
+            tests/test_supervisor_properties.py \
+            tests/redteam/test_supervisor_redteam.py
+
+      - name: Verify C99 / Python Bit-Exact Equivalence
+        run: |
+          pytest tests/test_c99_equivalence.py
+
+      - name: Run Formal Claim & Evidence Auditor
+        run: |
+          python tools/claim_auditor.py
+
+      - name: Run Master Reproduction Suite (Fast Verification)
+        run: |
+          python scripts/reproduce.py --fast

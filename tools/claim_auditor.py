@@ -258,6 +258,23 @@ class ClaimAuditor:
             "B5 0/24 val grounded in phase6 report",
         )
 
+    def audit_final_synthesis_report(self) -> None:
+        print("\n--- Auditing Final Synthesis Report (docs/FINAL_SYNTHESIS_REPORT.md) ---")
+        final_path = DOCS_DIR / "FINAL_SYNTHESIS_REPORT.md"
+        self.check(final_path.exists(), "docs/FINAL_SYNTHESIS_REPORT.md exists")
+        if not final_path.exists():
+            return
+
+        final_text = final_path.read_text(encoding="utf-8")
+        self.check("0 / 48 (0.0%)" in final_text, "B5 0/48 test divergences in final report")
+        self.check("31 / 48 (64.6%)" in final_text, "B3 31/48 test divergences in final report")
+        self.check("1.45 cm" in final_text, "B5 p95 lateral error 1.45 cm in final report")
+        self.check("0 Bytes" in final_text, "Zero dynamic heap allocation in final report")
+        self.check("1.460 μs" in final_text, "Host mean latency 1.460 us in final report")
+        self.check(
+            "100.000% exact mode match" in final_text, "100.000% mode match in final report"
+        )
+
     def run(self) -> int:
         print("=================================================================")
         print("                 EGGA CLAIM & EVIDENCE AUDITOR                  ")
@@ -268,6 +285,7 @@ class ClaimAuditor:
         self.audit_phase6_claims()
         self.audit_phase7_claims()
         self.audit_phase8_claims()
+        self.audit_final_synthesis_report()
 
         print("\n=================================================================")
         print(f"Audit Summary: {self.passed_checks} / {self.total_checks} checks passed.")
