@@ -284,3 +284,21 @@ runtime supervisor—was ported to standalone ANSI C99 (`src/c/`) targeting auto
    invariants in both runtimes. Transient single-tick boundary differences (< 0.012% of ticks) arise solely
    from IEEE 754 float32 vs float64 knot-point rounding (< 10 μm/s) without compromising safety.
 
+## D38. Automotive Safety Case, ISO 26262/21448 Traceability, and Automated Claim Auditing
+In Gate 9, the safety argumentation for EGGA was formalized under automotive functional safety
+(ISO 26262:2018) and safety of the intended functionality (ISO 21448 / SOTIF):
+1. **Hazard Analysis & Risk Assessment (HARA)**: Defined item boundary, operational situations, and
+   classified 4 core hazards (`HZ-01` through `HZ-04`). Derived four Safety Goals (`SG-01` through `SG-04`)
+   rated up to ASIL D (`docs/safety/HARA.md`).
+2. **Requirements Traceability Matrix**: Established 13 formal functional safety requirements
+   (`REQ-EGGA-001` through `REQ-EGGA-013`) mapped bidirectionally to Python and C99 implementations
+   and their verification test suites (`docs/safety/traceability.csv`).
+3. **SOTIF Triggering Condition Matrix**: Identified 8 performance insufficiencies and environmental
+   disturbances (`SOTIF-TC-01` through `SOTIF-TC-08`), mapping each to explicit supervisor mitigation
+   mechanisms and fail-safe transitions (`docs/safety/sotif_triggers.csv`).
+4. **Standardized Model Card**: Authored `docs/model_card_b5.md` documenting the 92-parameter RL policy,
+   observation isolation, training campaign (20 seeds), and benchmark results (0/48 train, 0/24 val, 0/48 test
+   divergences vs 31/48 B3 failures).
+5. **Automated Claim Auditor**: Built `tools/claim_auditor.py` to cryptographically and statistically audit
+   all metrics claimed across reports and documentation against raw simulation logs and serialized results,
+   enforcing zero ungrounded assertions across the repository.
