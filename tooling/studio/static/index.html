@@ -3,337 +3,595 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>EGGA Studio — Automotive Runtime Safety Telemetry</title>
+  <title>EGGA Studio — 24/7 Continuous Safety Telemetry</title>
   <style>
     :root {
-      --bg: #090d16;
-      --card-bg: #111827;
-      --border: #1f2937;
+      --bg: #070b13;
+      --card-bg: #0f172a;
+      --card-border: #1e293b;
       --accent: #3b82f6;
-      --accent-glow: rgba(59, 130, 246, 0.3);
-      --text: #f3f4f6;
-      --text-muted: #9ca3af;
+      --accent-glow: rgba(59, 130, 246, 0.35);
+      --text: #f8fafc;
+      --text-muted: #94a3b8;
       --danger: #ef4444;
       --warning: #f59e0b;
       --success: #10b981;
       --cyan: #06b6d4;
+      --purple: #8b5cf6;
     }
     * { box-sizing: border-box; margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, monospace; }
-    body { background: var(--bg); color: var(--text); padding: 16px; overflow-x: hidden; }
-    
+    body { background: var(--bg); color: var(--text); padding: 14px; overflow-x: hidden; }
+
+    /* Top Navigation Bar */
     header {
       display: flex; justify-content: space-between; align-items: center;
-      border-bottom: 1px solid var(--border); padding-bottom: 12px; margin-bottom: 16px;
+      border-bottom: 1px solid var(--card-border); padding-bottom: 12px; margin-bottom: 12px;
     }
-    .brand { display: flex; align-items: center; gap: 12px; }
-    .brand h1 { font-size: 1.25rem; font-weight: 700; letter-spacing: 0.05em; color: #fff; }
-    .badge-asil { background: rgba(16, 185, 129, 0.15); color: var(--success); border: 1px solid var(--success); font-size: 0.75rem; padding: 2px 8px; border-radius: 4px; font-weight: 600; }
-    
-    .controls { display: flex; align-items: center; gap: 12px; background: var(--card-bg); padding: 10px 16px; border-radius: 8px; border: 1px solid var(--border); margin-bottom: 16px; }
-    button { background: var(--accent); color: white; border: none; padding: 6px 16px; border-radius: 4px; font-weight: 600; cursor: pointer; transition: 0.15s; }
-    button:hover { background: #2563eb; }
-    input[type=range] { flex: 1; accent-color: var(--accent); cursor: pointer; }
+    .brand { display: flex; align-items: center; gap: 14px; }
+    .brand h1 { font-size: 1.2rem; font-weight: 700; letter-spacing: 0.06em; color: #fff; }
+    .status-badge {
+      display: inline-flex; align-items: center; gap: 6px;
+      background: rgba(16, 185, 129, 0.12); color: var(--success);
+      border: 1px solid rgba(16, 185, 129, 0.4); font-size: 0.75rem;
+      padding: 3px 10px; border-radius: 9999px; font-weight: 700;
+      letter-spacing: 0.05em; text-transform: uppercase;
+    }
+    .pulse-dot {
+      width: 7px; height: 7px; border-radius: 50%; background: var(--success);
+      animation: pulse 1.4s infinite;
+    }
+    @keyframes pulse {
+      0% { transform: scale(0.9); opacity: 1; }
+      50% { transform: scale(1.4); opacity: 0.4; }
+      100% { transform: scale(0.9); opacity: 1; }
+    }
+    .meta-metrics { display: flex; gap: 18px; font-size: 0.8rem; color: var(--text-muted); font-family: monospace; }
+    .meta-metrics span b { color: var(--text); }
 
-    .grid { display: grid; grid-template-columns: 2fr 1fr; gap: 16px; margin-bottom: 16px; }
-    .card { background: var(--card-bg); border: 1px solid var(--border); border-radius: 8px; padding: 16px; position: relative; }
-    .card-title { font-size: 0.85rem; font-weight: 600; text-transform: uppercase; color: var(--text-muted); letter-spacing: 0.05em; margin-bottom: 12px; display: flex; justify-content: space-between; align-items: center; }
+    /* Event Injection Command Bar */
+    .command-bar {
+      display: flex; align-items: center; justify-content: space-between;
+      background: var(--card-bg); border: 1px solid var(--card-border);
+      border-radius: 8px; padding: 10px 16px; margin-bottom: 14px; gap: 12px;
+    }
+    .cmd-group { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+    .cmd-title { font-size: 0.75rem; text-transform: uppercase; color: var(--text-muted); font-weight: 700; margin-right: 6px; }
+    .btn-cmd {
+      background: #1e293b; color: #cbd5e1; border: 1px solid #334155;
+      padding: 5px 12px; border-radius: 6px; font-size: 0.75rem; font-weight: 600;
+      cursor: pointer; transition: all 0.15s ease;
+    }
+    .btn-cmd:hover { background: #334155; color: #fff; transform: translateY(-1px); }
+    .btn-ice { border-color: rgba(6, 182, 212, 0.5); }
+    .btn-ice:hover { background: rgba(6, 182, 212, 0.2); }
+    .btn-swerve { border-color: rgba(245, 158, 11, 0.5); }
+    .btn-swerve:hover { background: rgba(245, 158, 11, 0.2); }
+    .weather-pill {
+      font-size: 0.75rem; font-weight: 700; padding: 4px 10px; border-radius: 4px;
+      font-family: monospace; text-transform: uppercase;
+    }
+    .weather-dry { background: rgba(16, 185, 129, 0.15); color: var(--success); border: 1px solid var(--success); }
+    .weather-rain { background: rgba(59, 130, 246, 0.15); color: var(--accent); border: 1px solid var(--accent); }
+    .weather-ice { background: rgba(6, 182, 212, 0.2); color: var(--cyan); border: 1px solid var(--cyan); }
 
-    canvas { width: 100%; border-radius: 6px; background: #030712; border: 1px solid #1f2937; }
+    /* Main Grid Layout */
+    .grid-top { display: grid; grid-template-columns: 2.2fr 1fr; gap: 14px; margin-bottom: 14px; }
+    .grid-bottom { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 14px; }
 
-    .stat-row { display: flex; justify-content: space-between; padding: 6px 0; border-bottom: 1px solid rgba(255,255,255,0.05); font-size: 0.85rem; }
-    .stat-val { font-weight: 600; font-family: monospace; }
-    
-    .mode-pill { font-size: 0.9rem; font-weight: 700; padding: 4px 12px; border-radius: 6px; text-align: center; }
+    .card {
+      background: var(--card-bg); border: 1px solid var(--card-border);
+      border-radius: 8px; padding: 14px; position: relative;
+    }
+    .card-title {
+      font-size: 0.75rem; font-weight: 700; text-transform: uppercase;
+      color: var(--text-muted); letter-spacing: 0.06em; margin-bottom: 10px;
+      display: flex; justify-content: space-between; align-items: center;
+    }
+    .card-title .val-highlight { color: #fff; font-family: monospace; font-size: 0.85rem; }
+
+    /* Motion Canvas */
+    canvas#trackCanvas {
+      width: 100%; height: 280px; background: #030712; border-radius: 6px;
+      border: 1px solid #1e293b; display: block;
+    }
+
+    /* Meters and gauges */
+    .stat-row {
+      display: flex; justify-content: space-between; align-items: center;
+      padding: 6px 0; border-bottom: 1px solid rgba(255,255,255,0.05); font-size: 0.8rem;
+    }
+    .stat-label { color: var(--text-muted); }
+    .stat-val { font-weight: 700; font-family: monospace; }
+
+    .meter-container { margin-top: 8px; margin-bottom: 10px; }
+    .meter-header { display: flex; justify-content: space-between; font-size: 0.75rem; margin-bottom: 3px; font-family: monospace; }
+    .meter-bar { height: 9px; background: #1e293b; border-radius: 5px; overflow: hidden; position: relative; }
+    .meter-fill { height: 100%; width: 0%; transition: width 0.08s linear; }
+    .fill-blue { background: linear-gradient(90deg, #3b82f6, #60a5fa); }
+    .fill-ltr { background: linear-gradient(90deg, #10b981 0%, #f59e0b 60%, #ef4444 85%); }
+
+    /* Mode Pill */
+    .mode-pill {
+      font-size: 0.85rem; font-weight: 800; padding: 6px 14px; border-radius: 6px;
+      text-align: center; font-family: monospace; letter-spacing: 0.05em; margin-bottom: 10px;
+    }
     .mode-NOMINAL { background: rgba(16, 185, 129, 0.2); color: var(--success); border: 1px solid var(--success); }
     .mode-CAUTIOUS { background: rgba(245, 158, 11, 0.2); color: var(--warning); border: 1px solid var(--warning); }
     .mode-LOW_MU { background: rgba(6, 182, 212, 0.2); color: var(--cyan); border: 1px solid var(--cyan); }
-    .mode-DEGRADED { background: rgba(239, 68, 68, 0.2); color: var(--danger); border: 1px solid var(--danger); }
-    .mode-MINIMAL_RISK { background: #b91c1c; color: white; }
+    .mode-DEGRADED { background: rgba(239, 68, 68, 0.25); color: var(--danger); border: 1px solid var(--danger); animation: danger-pulse 1s infinite alternate; }
+    @keyframes danger-pulse { from { opacity: 0.8; } to { opacity: 1; box-shadow: 0 0 12px rgba(239,68,68,0.4); } }
 
-    .meter-bar { height: 8px; background: #1f2937; border-radius: 4px; overflow: hidden; margin-top: 4px; }
-    .meter-fill { height: 100%; width: 0%; transition: width 0.05s ease; }
-    .meter-blue { background: var(--accent); }
-    .meter-red { background: var(--danger); }
+    /* Strip Charts */
+    canvas.strip-chart { width: 100%; height: 95px; background: #030712; border-radius: 6px; border: 1px solid #1e293b; display: block; margin-top: 6px; }
+
+    /* Incident Terminal Console */
+    .terminal-box {
+      background: #020617; border: 1px solid #1e293b; border-radius: 6px;
+      height: 120px; overflow-y: auto; padding: 8px; font-family: monospace; font-size: 0.72rem;
+    }
+    .terminal-entry { padding: 3px 0; border-bottom: 1px solid rgba(255,255,255,0.03); color: #94a3b8; line-height: 1.3; }
+    .terminal-entry .ts { color: var(--cyan); margin-right: 6px; }
+    .terminal-entry .tag-clamp { color: var(--warning); font-weight: bold; }
+    .terminal-entry .tag-guard { color: var(--danger); font-weight: bold; }
   </style>
 </head>
 <body>
 
+  <!-- Top Header -->
   <header>
     <div class="brand">
-      <h1>EGGA STUDIO // LIVEOPS</h1>
-      <span class="badge-asil">ISO 26262 ASIL D VERIFIED</span>
+      <h1>EGGA STUDIO</h1>
+      <div class="status-badge"><div class="pulse-dot"></div> 24/7 Continuous Monitoring</div>
+      <div class="status-badge" style="background: rgba(59,130,246,0.12); color: var(--cyan); border-color: rgba(6,182,212,0.4);">ISO 26262 ASIL D</div>
     </div>
-    <div id="clock" style="font-size: 0.85rem; color: var(--text-muted); font-family: monospace;">T = 0.00s</div>
+    <div class="meta-metrics">
+      <span>UPTIME: <b id="lblUptime">00:00:00</b></span>
+      <span>TICKS: <b id="lblTicks">0</b></span>
+      <span>RATE: <b>25.0 Hz</b></span>
+      <span>INTERVENTIONS: <b id="lblInterventions" style="color: var(--warning);">0</b></span>
+    </div>
   </header>
 
-  <div class="controls">
-    <button id="btnPlay">PAUSE</button>
-    <button id="btnReset">RESET</button>
-    <input type="range" id="timeline" min="0" max="100" value="0">
-    <span id="stepCount" style="font-size: 0.85rem; font-family: monospace; min-width: 80px;">0 / 0</span>
-  </div>
-
-  <div class="grid">
-    <!-- Main Overhead Trajectory Map -->
-    <div class="card">
-      <div class="card-title">
-        <span>Overhead Vehicle Trajectory & Articulated Kinematics</span>
-        <span id="plantState" style="color: var(--accent);">Class 8 Tractor-Trailer</span>
-      </div>
-      <canvas id="canvasTrack" height="320"></canvas>
+  <!-- Event Injection Command Bar -->
+  <div class="command-bar">
+    <div class="cmd-group">
+      <span class="cmd-title">⚡ Live Scenario Injector:</span>
+      <button class="btn-cmd btn-ice" onclick="injectEvent('ice')">❄️ Ice Patch (μ=0.25)</button>
+      <button class="btn-cmd" onclick="injectEvent('rain')">🌧️ Rain (μ=0.42)</button>
+      <button class="btn-cmd btn-swerve" onclick="injectEvent('swerve')">⚠️ Obstacle Swerve</button>
+      <button class="btn-cmd" onclick="injectEvent('gust')">💨 Crosswind Gust</button>
+      <button class="btn-cmd" onclick="injectEvent('dry')">☀️ Dry Highway (μ=0.85)</button>
     </div>
-
-    <!-- Friction Circle Gauge -->
-    <div class="card">
-      <div class="card-title">
-        <span>Kamm's Friction Circle (2D Saturation)</span>
-        <span id="fcStatus" style="color: var(--success);">UNCLAMPED</span>
-      </div>
-      <canvas id="canvasFC" height="320"></canvas>
+    <div class="cmd-group">
+      <span class="cmd-title">Environment:</span>
+      <div id="weatherPill" class="weather-pill weather-dry">DRY (μ=0.85)</div>
     </div>
   </div>
 
-  <div class="grid" style="grid-template-columns: 1fr 1fr;">
-    <!-- Articulation & Rollover Barrier Status -->
+  <!-- Main Top Grid -->
+  <div class="grid-top">
+    <!-- Left: 2D Live Track Following Canvas -->
     <div class="card">
-      <div class="card-title">Anti-Jackknife & Rollover Dynamics</div>
-      <div class="stat-row">
-        <span>Articulation Angle (θ_a)</span>
-        <span id="valThetaA" class="stat-val">0.0°</span>
+      <div class="card-title">
+        <span>2D Overhead Highway Tracking (Continuous Camera)</span>
+        <span class="val-highlight" id="lblCoords">X: 0.0 m | Y: 0.0 m</span>
       </div>
-      <div class="stat-row">
-        <span>Critical Jackknife Limit (θ_crit)</span>
-        <span id="valThetaCrit" class="stat-val">0.0°</span>
-      </div>
-      <div style="margin: 10px 0;">
-        <div style="display:flex; justify-content:space-between; font-size:0.8rem;">
-          <span>Trailer Rollover Load Transfer (LTR)</span>
-          <span id="valLtr">0.00</span>
-        </div>
-        <div class="meter-bar"><div id="fillLtr" class="meter-fill meter-red"></div></div>
-      </div>
-      <div style="margin: 10px 0;">
-        <div style="display:flex; justify-content:space-between; font-size:0.8rem;">
-          <span>Trailer Differential Brake Drag</span>
-          <span id="valTrailerDrag">0.00</span>
-        </div>
-        <div class="meter-bar"><div id="fillDrag" class="meter-fill meter-blue"></div></div>
-      </div>
+      <canvas id="trackCanvas"></canvas>
     </div>
 
-    <!-- Supervisor State Machine Status -->
+    <!-- Right: Friction Circle & Articulation Cockpit -->
     <div class="card">
-      <div class="card-title">Supervisor Mode & SOTIF Guard Status</div>
-      <div style="margin: 12px 0;">
-        <div id="modePill" class="mode-pill mode-NOMINAL">NOMINAL</div>
+      <div class="card-title">
+        <span>Safety Supervisor State</span>
+        <span class="val-highlight" id="lblSpeed">22.0 m/s</span>
+      </div>
+
+      <div id="modePill" class="mode-pill mode-NOMINAL">NOMINAL MODE</div>
+
+      <!-- Friction Circle Utilization -->
+      <div class="meter-container">
+        <div class="meter-header">
+          <span>Kamm Circle Utilization (ax²+ay² ≤ μg)</span>
+          <span id="lblUtil">0.0%</span>
+        </div>
+        <div class="meter-bar">
+          <div id="barUtil" class="meter-fill fill-blue" style="width: 0%;"></div>
+        </div>
+      </div>
+
+      <!-- Rollover LTR Meter -->
+      <div class="meter-container">
+        <div class="meter-header">
+          <span>Trailer Rollover LTR (Limit: 1.00)</span>
+          <span id="lblLtr">0.000</span>
+        </div>
+        <div class="meter-bar">
+          <div id="barLtr" class="meter-fill fill-ltr" style="width: 0%;"></div>
+        </div>
+      </div>
+
+      <!-- Hitch Angle vs Critical Limit -->
+      <div class="meter-container">
+        <div class="meter-header">
+          <span>Hitch Articulation θa / θcrit</span>
+          <span id="lblHitch">0.0° / 24.5°</span>
+        </div>
+        <div class="meter-bar">
+          <div id="barHitch" class="meter-fill fill-blue" style="width: 0%;"></div>
+        </div>
+      </div>
+
+      <div class="stat-row">
+        <span class="stat-label">Active Trailer Tension Drag:</span>
+        <span class="stat-val" id="lblTrailerBrake" style="color: var(--cyan);">0.00 bar</span>
       </div>
       <div class="stat-row">
-        <span>Forward Velocity (v_x)</span>
-        <span id="valSpeed" class="stat-val">0.0 m/s</span>
+        <span class="stat-label">Kinematic Steering Clamp:</span>
+        <span class="stat-val" id="lblSteerClamp">None</span>
       </div>
-      <div class="stat-row">
-        <span>Surface Friction (μ_est)</span>
-        <span id="valMu" class="stat-val">0.85</span>
+    </div>
+  </div>
+
+  <!-- Bottom Grid: Live Scrolling Strip Charts & Incident Log -->
+  <div class="grid-bottom">
+    <!-- Chart 1: Rollover LTR Oscilloscope -->
+    <div class="card">
+      <div class="card-title">
+        <span>Trailer Rollover LTR (Live Stream)</span>
+        <span class="val-highlight" id="lblCurrentLtr">0.00</span>
       </div>
-      <div class="stat-row">
-        <span>Guarded Steering Angle (δ_safe)</span>
-        <span id="valSteerSafe" class="stat-val">0.000 rad</span>
+      <canvas id="chartLtr" class="strip-chart"></canvas>
+    </div>
+
+    <!-- Chart 2: Articulation Angle Oscilloscope -->
+    <div class="card">
+      <div class="card-title">
+        <span>Articulation θa vs Barrier (deg)</span>
+        <span class="val-highlight" id="lblCurrentTheta">0.0°</span>
       </div>
-      <div class="stat-row">
-        <span>Friction Circle Utilisation (ρ)</span>
-        <span id="valUtil" class="stat-val">0.00</span>
+      <canvas id="chartTheta" class="strip-chart"></canvas>
+    </div>
+
+    <!-- Chart 3: Live Incident Terminal Log -->
+    <div class="card">
+      <div class="card-title">
+        <span>SOTIF Incident Flight Recorder</span>
+        <span class="val-highlight" style="color: var(--warning);">LIVE STREAM</span>
+      </div>
+      <div id="terminalConsole" class="terminal-box">
+        <div class="terminal-entry"><span class="ts">[BOOT]</span> Continuous 24/7 supervisor flight recorder active.</div>
       </div>
     </div>
   </div>
 
   <script>
-    let frames = [];
-    let curIdx = 0;
-    let isPlaying = true;
+    // --- Canvas & Rendering Engine ---
+    const trackCanvas = document.getElementById('trackCanvas');
+    const trackCtx = trackCanvas.getContext('2d');
 
-    const canvasTrack = document.getElementById('canvasTrack');
-    const ctxTrack = canvasTrack.getContext('2d');
-    const canvasFC = document.getElementById('canvasFC');
-    const ctxFC = canvasFC.getContext('2d');
+    const chartLtrCanvas = document.getElementById('chartLtr');
+    const chartLtrCtx = chartLtrCanvas.getContext('2d');
 
-    const btnPlay = document.getElementById('btnPlay');
-    const btnReset = document.getElementById('btnReset');
-    const timeline = document.getElementById('timeline');
-    const stepCount = document.getElementById('stepCount');
-    const clock = document.getElementById('clock');
+    const chartThetaCanvas = document.getElementById('chartTheta');
+    const chartThetaCtx = chartThetaCanvas.getContext('2d');
 
-    async function loadData() {
+    function resizeCanvases() {
+      trackCanvas.width = trackCanvas.clientWidth * window.devicePixelRatio;
+      trackCanvas.height = trackCanvas.clientHeight * window.devicePixelRatio;
+      chartLtrCanvas.width = chartLtrCanvas.clientWidth * window.devicePixelRatio;
+      chartLtrCanvas.height = chartLtrCanvas.clientHeight * window.devicePixelRatio;
+      chartThetaCanvas.width = chartThetaCanvas.clientWidth * window.devicePixelRatio;
+      chartThetaCanvas.height = chartThetaCanvas.clientHeight * window.devicePixelRatio;
+    }
+    window.addEventListener('resize', resizeCanvases);
+    resizeCanvases();
+
+    // Data Storage
+    let latestData = null;
+    let loggedIncidentKeys = new Set();
+
+    // Formatter
+    function formatUptime(sec) {
+      const h = Math.floor(sec / 3600).toString().padStart(2, '0');
+      const m = Math.floor((sec % 3600) / 60).toString().padStart(2, '0');
+      const s = Math.floor(sec % 60).toString().padStart(2, '0');
+      return `${h}:${m}:${s}`;
+    }
+
+    // Live Event Injection
+    async function injectEvent(eventType) {
       try {
-        const res = await fetch('/api/telemetry');
-        frames = await res.json();
-        timeline.max = frames.length - 1;
-        stepCount.innerText = `0 / ${frames.length}`;
-        requestAnimationFrame(loop);
+        await fetch('/api/inject', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ event: eventType })
+        });
       } catch (err) {
-        console.error("Failed to load telemetry:", err);
+        console.error("Injection failed", err);
       }
     }
 
-    btnPlay.onclick = () => {
-      isPlaying = !isPlaying;
-      btnPlay.innerText = isPlaying ? "PAUSE" : "PLAY";
-    };
-
-    btnReset.onclick = () => {
-      curIdx = 0;
-      timeline.value = 0;
-    };
-
-    timeline.oninput = () => {
-      curIdx = parseInt(timeline.value);
-    };
-
-    function render(frame) {
-      clock.innerText = `T = ${frame.t.toFixed(2)}s`;
-      stepCount.innerText = `${curIdx} / ${frames.length}`;
-      timeline.value = curIdx;
-
-      // Update Text HUD
-      document.getElementById('valSpeed').innerText = `${frame.vx.toFixed(1)} m/s (${(frame.vx*3.6).toFixed(0)} km/h)`;
-      document.getElementById('valMu').innerText = frame.mu.toFixed(2);
-      document.getElementById('valThetaA').innerText = `${frame.theta_a_deg.toFixed(1)}°`;
-      document.getElementById('valThetaCrit').innerText = `±${frame.theta_crit_deg.toFixed(1)}°`;
-      document.getElementById('valLtr').innerText = `${(frame.ltr * 100).toFixed(0)}%`;
-      document.getElementById('fillLtr').style.width = `${Math.min(100, frame.ltr * 100)}%`;
-      document.getElementById('valTrailerDrag').innerText = `${(frame.trailer_brake_pressure * 100).toFixed(0)}%`;
-      document.getElementById('fillDrag').style.width = `${Math.min(100, frame.trailer_brake_pressure * 100)}%`;
-      document.getElementById('valSteerSafe').innerText = `${frame.steer_cmd_safe.toFixed(3)} rad`;
-      document.getElementById('valUtil').innerText = frame.friction_utilisation.toFixed(2);
-
-      const modePill = document.getElementById('modePill');
-      modePill.innerText = frame.mode;
-      modePill.className = `mode-pill mode-${frame.mode}`;
-
-      const fcStatus = document.getElementById('fcStatus');
-      if (frame.friction_clamped) {
-        fcStatus.innerText = "CLAMPED";
-        fcStatus.style.color = "var(--danger)";
-      } else {
-        fcStatus.innerText = "UNCLAMPED";
-        fcStatus.style.color = "var(--success)";
-      }
-
-      // 1. Draw Overhead Track
-      const wT = canvasTrack.width = canvasTrack.clientWidth;
-      const hT = canvasTrack.height = canvasTrack.clientHeight;
-      ctxTrack.clearRect(0, 0, wT, hT);
-
-      // Camera centered on vehicle X, Y
-      const scale = 2.5;
-      const cx = wT / 2 - frame.x * scale;
-      const cy = hT / 2 - frame.y * scale;
-
-      // Draw road
-      ctxTrack.fillStyle = "#1e293b";
-      ctxTrack.fillRect(0, cy - 25 * scale, wT, 50 * scale);
-
-      // Draw slick surface patch (between X = 40 and 90)
-      ctxTrack.fillStyle = "rgba(6, 182, 212, 0.25)";
-      ctxTrack.fillRect(cx + 40 * scale, cy - 25 * scale, 50 * scale, 50 * scale);
-
-      // Road centerline
-      ctxTrack.strokeStyle = "#475569";
-      ctxTrack.setLineDash([12, 8]);
-      ctxTrack.beginPath();
-      ctxTrack.moveTo(0, cy);
-      ctxTrack.lineTo(wT, cy);
-      ctxTrack.stroke();
-      ctxTrack.setLineDash([]);
-
-      // Draw Vehicle Trajectory
-      ctxTrack.strokeStyle = "#3b82f6";
-      ctxTrack.lineWidth = 2;
-      ctxTrack.beginPath();
-      for (let i = 0; i <= curIdx; i++) {
-        const px = cx + frames[i].x * scale;
-        const py = cy + frames[i].y * scale;
-        if (i === 0) ctxTrack.moveTo(px, py);
-        else ctxTrack.lineTo(px, py);
-      }
-      ctxTrack.stroke();
-
-      // Draw Tractor (blue box)
-      const vehX = cx + frame.x * scale;
-      const vehY = cy + frame.y * scale;
-      ctxTrack.save();
-      ctxTrack.translate(vehX, vehY);
-      ctxTrack.rotate(frame.psi1);
-      ctxTrack.fillStyle = "#3b82f6";
-      ctxTrack.fillRect(-12, -7, 24, 14);
-
-      // Draw Trailer (gray box linked by hitch)
-      const thA = frame.theta_a_deg * Math.PI / 180;
-      ctxTrack.translate(-15, 0);
-      ctxTrack.rotate(-thA);
-      ctxTrack.fillStyle = "#64748b";
-      ctxTrack.fillRect(-35, -8, 35, 16);
-      ctxTrack.restore();
-
-      // 2. Draw Kamm's Friction Circle
-      const wF = canvasFC.width = canvasFC.clientWidth;
-      const hF = canvasFC.height = canvasFC.clientHeight;
-      ctxFC.clearRect(0, 0, wF, hF);
-
-      const fCenterX = wF / 2;
-      const fCenterY = hF / 2;
-      const maxAcc = 10.0;
-      const radius = (Math.min(wF, hF) / 2) * 0.85;
-
-      // Draw outer friction circle (mu * g)
-      const muR = (frame.mu * 9.81 / maxAcc) * radius;
-      ctxFC.strokeStyle = "#475569";
-      ctxFC.lineWidth = 2;
-      ctxFC.beginPath();
-      ctxFC.arc(fCenterX, fCenterY, muR, 0, Math.PI * 2);
-      ctxFC.stroke();
-
-      // Inner safe boundary (gamma = 0.95)
-      ctxFC.strokeStyle = "rgba(16, 185, 129, 0.4)";
-      ctxFC.setLineDash([4, 4]);
-      ctxFC.beginPath();
-      ctxFC.arc(fCenterX, fCenterY, muR * 0.95, 0, Math.PI * 2);
-      ctxFC.stroke();
-      ctxFC.setLineDash([]);
-
-      // Axes
-      ctxFC.strokeStyle = "#334155";
-      ctxFC.beginPath();
-      ctxFC.moveTo(fCenterX - radius, fCenterY);
-      ctxFC.lineTo(fCenterX + radius, fCenterY);
-      ctxFC.moveTo(fCenterX, fCenterY - radius);
-      ctxFC.lineTo(fCenterX, fCenterY + radius);
-      ctxFC.stroke();
-
-      // Plot Operating Point (ax_safe, ay_safe)
-      const opX = fCenterX + (frame.ay_safe / maxAcc) * radius;
-      const opY = fCenterY - (frame.ax_safe / maxAcc) * radius;
-
-      ctxFC.fillStyle = frame.friction_clamped ? "#ef4444" : "#10b981";
-      ctxFC.beginPath();
-      ctxFC.arc(opX, opY, 6, 0, Math.PI * 2);
-      ctxFC.fill();
-    }
-
-    let lastTime = 0;
-    function loop(time) {
-      if (isPlaying && frames.length > 0) {
-        if (time - lastTime > 25) { // 40 FPS playback
-          curIdx = (curIdx + 1) % frames.length;
-          lastTime = time;
+    // --- Fast 25 Hz Polling Engine ---
+    async function pollTelemetry() {
+      try {
+        const resp = await fetch('/api/telemetry');
+        if (resp.ok) {
+          latestData = await resp.json();
+          updateUI(latestData);
         }
+      } catch (err) {
+        // Network retry
       }
-      if (frames.length > 0) {
-        render(frames[curIdx]);
+      setTimeout(pollTelemetry, 40); // 25 Hz
+    }
+    pollTelemetry();
+
+    function updateUI(data) {
+      if (!data || !data.current) return;
+      const c = data.current;
+
+      document.getElementById('lblUptime').textContent = formatUptime(data.uptime_seconds);
+      document.getElementById('lblTicks').textContent = data.ticks_total.toLocaleString();
+      document.getElementById('lblInterventions').textContent = data.interventions_total.toLocaleString();
+      document.getElementById('lblCoords').textContent = `X: ${c.x.toFixed(1)}m | Y: ${c.y.toFixed(1)}m`;
+      document.getElementById('lblSpeed').textContent = `${(c.vx * 3.6).toFixed(1)} km/h`;
+
+      // Weather Pill
+      const wPill = document.getElementById('weatherPill');
+      wPill.className = `weather-pill weather-${c.weather}`;
+      wPill.textContent = `${c.weather.toUpperCase()} (μ=${c.mu.toFixed(2)})`;
+
+      // Mode Pill
+      const mPill = document.getElementById('modePill');
+      mPill.className = `mode-pill mode-${c.mode}`;
+      mPill.textContent = `${c.mode} SUPERVISOR MODE`;
+
+      // Utilization Bar
+      const utilPct = Math.min(100, Math.round(c.friction_utilisation * 100));
+      document.getElementById('lblUtil').textContent = `${utilPct}%`;
+      document.getElementById('barUtil').style.width = `${utilPct}%`;
+
+      // LTR Bar
+      const ltrVal = c.ltr;
+      document.getElementById('lblLtr').textContent = ltrVal.toFixed(3);
+      document.getElementById('barLtr').style.width = `${Math.min(100, Math.round(ltrVal * 100))}%`;
+      document.getElementById('lblCurrentLtr').textContent = ltrVal.toFixed(3);
+
+      // Hitch Bar
+      const hitchDeg = Math.abs(c.theta_a_deg);
+      const critDeg = c.theta_crit_deg;
+      document.getElementById('lblHitch').textContent = `${hitchDeg.toFixed(1)}° / ${critDeg.toFixed(1)}°`;
+      document.getElementById('barHitch').style.width = `${Math.min(100, Math.round((hitchDeg / critDeg) * 100))}%`;
+      document.getElementById('lblCurrentTheta').textContent = `${hitchDeg.toFixed(1)}°`;
+
+      // Tension and Clamping
+      document.getElementById('lblTrailerBrake').textContent = `${(c.trailer_brake_pressure * 6.5).toFixed(2)} bar`;
+      document.getElementById('lblSteerClamp').textContent = c.friction_clamped ? 'ACTIVE CLAMP' : 'Nominal';
+      document.getElementById('lblSteerClamp').style.color = c.friction_clamped ? 'var(--warning)' : 'var(--text-muted)';
+
+      // Append Terminal Incidents
+      if (data.incidents && data.incidents.length) {
+        const term = document.getElementById('terminalConsole');
+        data.incidents.forEach(inc => {
+          const key = `${inc.tick}_${inc.trigger}`;
+          if (!loggedIncidentKeys.has(key)) {
+            loggedIncidentKeys.add(key);
+            const row = document.createElement('div');
+            row.className = 'terminal-entry';
+            const tagClass = inc.trailer_brake > 0 ? 'tag-guard' : 'tag-clamp';
+            row.innerHTML = `<span class="ts">[t=${inc.t.toFixed(2)}s]</span> <span class="${tagClass}">${inc.trigger}</span> (μ=${inc.mu}, θa=${inc.theta_a_deg}°, drag=${inc.trailer_brake})`;
+            term.appendChild(row);
+            term.scrollTop = term.scrollHeight;
+          }
+        });
       }
-      requestAnimationFrame(loop);
     }
 
-    loadData();
+    // --- High-FPS Smooth Animation Loop ---
+    function render() {
+      requestAnimationFrame(render);
+      if (!latestData || !latestData.current) return;
+
+      const c = latestData.current;
+      const trail = latestData.trail || [];
+      const charts = latestData.charts || [];
+
+      // 1. Draw 2D Overhead Track Canvas
+      const w = trackCanvas.width;
+      const h = trackCanvas.height;
+      trackCtx.clearRect(0, 0, w, h);
+
+      // Camera follows vehicle smoothly: Center camera on tractor (c.x, c.y)
+      const scale = 5.5; // pixels per meter
+      const camX = c.x;
+      const camY = c.y;
+
+      trackCtx.save();
+      trackCtx.translate(w / 2, h / 2);
+      trackCtx.scale(scale, scale);
+      trackCtx.translate(-camX, -camY);
+
+      // Draw Highway Road Surface
+      const roadHalfWidth = 4.2;
+      trackCtx.beginPath();
+      // Draw road boundary from camX - 40 to camX + 40
+      const startX = camX - 45;
+      const endX = camX + 45;
+
+      // Fill road strip
+      trackCtx.beginPath();
+      for (let x = startX; x <= endX; x += 2) {
+        const y_ref = 15.0 * Math.sin(0.006 * x) + 8.0 * Math.cos(0.015 * x);
+        if (x === startX) trackCtx.moveTo(x, y_ref - roadHalfWidth);
+        else trackCtx.lineTo(x, y_ref - roadHalfWidth);
+      }
+      for (let x = endX; x >= startX; x -= 2) {
+        const y_ref = 15.0 * Math.sin(0.006 * x) + 8.0 * Math.cos(0.015 * x);
+        trackCtx.lineTo(x, y_ref + roadHalfWidth);
+      }
+      trackCtx.closePath();
+
+      // Road color depends on weather
+      if (c.weather === 'ice') {
+        trackCtx.fillStyle = '#0f2438';
+      } else if (c.weather === 'rain') {
+        trackCtx.fillStyle = '#111d2e';
+      } else {
+        trackCtx.fillStyle = '#172033';
+      }
+      trackCtx.fill();
+      trackCtx.strokeStyle = '#334155';
+      trackCtx.lineWidth = 0.2;
+      trackCtx.stroke();
+
+      // Dashed Centerline
+      trackCtx.beginPath();
+      trackCtx.setLineDash([1.5, 1.5]);
+      trackCtx.strokeStyle = '#64748b';
+      trackCtx.lineWidth = 0.15;
+      for (let x = startX; x <= endX; x += 1.5) {
+        const y_ref = 15.0 * Math.sin(0.006 * x) + 8.0 * Math.cos(0.015 * x);
+        if (x === startX) trackCtx.moveTo(x, y_ref);
+        else trackCtx.lineTo(x, y_ref);
+      }
+      trackCtx.stroke();
+      trackCtx.setLineDash([]);
+
+      // Draw Trajectory Trail
+      if (trail.length > 1) {
+        trackCtx.beginPath();
+        trackCtx.moveTo(trail[0].x, trail[0].y);
+        for (let i = 1; i < trail.length; i++) {
+          trackCtx.lineTo(trail[i].x, trail[i].y);
+        }
+        trackCtx.strokeStyle = 'rgba(6, 182, 212, 0.4)';
+        trackCtx.lineWidth = 0.25;
+        trackCtx.stroke();
+      }
+
+      // Tractor-Trailer Kinematics Dimensions
+      const L_tractor = 5.2;
+      const W_tractor = 2.4;
+      const L_trailer = 12.0;
+      const W_trailer = 2.5;
+      const hitchOffset = 1.2; // kingpin distance behind tractor center
+
+      // 1. Draw 24-Ton Semitrailer (Heading psi2)
+      trackCtx.save();
+      const hitchX = c.x - hitchOffset * Math.cos(c.psi1);
+      const hitchY = c.y - hitchOffset * Math.sin(c.psi1);
+      trackCtx.translate(hitchX, hitchY);
+      trackCtx.rotate(c.psi2);
+
+      // Semitrailer Box
+      trackCtx.fillStyle = '#1e293b';
+      trackCtx.strokeStyle = c.is_rollover_critical ? '#ef4444' : '#38bdf8';
+      trackCtx.lineWidth = 0.15;
+      trackCtx.fillRect(-L_trailer, -W_trailer / 2, L_trailer, W_trailer);
+      trackCtx.strokeRect(-L_trailer, -W_trailer / 2, L_trailer, W_trailer);
+
+      // Trailer Wheels
+      trackCtx.fillStyle = '#0284c7';
+      trackCtx.fillRect(-L_trailer + 1.2, -W_trailer/2 - 0.2, 1.2, 0.2);
+      trackCtx.fillRect(-L_trailer + 1.2, W_trailer/2, 1.2, 0.2);
+      trackCtx.restore();
+
+      // 2. Kingpin Joint Circle
+      trackCtx.beginPath();
+      trackCtx.arc(hitchX, hitchY, 0.35, 0, Math.PI * 2);
+      trackCtx.fillStyle = '#f59e0b';
+      trackCtx.fill();
+
+      // 3. Draw Tractor (Heading psi1)
+      trackCtx.save();
+      trackCtx.translate(c.x, c.y);
+      trackCtx.rotate(c.psi1);
+
+      // Tractor Cab Body
+      trackCtx.fillStyle = '#334155';
+      trackCtx.strokeStyle = c.is_jackknife_critical ? '#ef4444' : '#94a3b8';
+      trackCtx.lineWidth = 0.18;
+      trackCtx.fillRect(-L_tractor / 2, -W_tractor / 2, L_tractor, W_tractor);
+      trackCtx.strokeRect(-L_tractor / 2, -W_tractor / 2, L_tractor, W_tractor);
+
+      // Tractor Windshield Cab
+      trackCtx.fillStyle = '#0f172a';
+      trackCtx.fillRect(0.4, -W_tractor/2 + 0.2, 1.4, W_tractor - 0.4);
+
+      // Front Steerable Wheels (Rotated by steer_safe)
+      const wheelL = 0.9;
+      const wheelW = 0.25;
+      const frontAxleX = L_tractor / 2 - 0.8;
+
+      // Left Front Wheel
+      trackCtx.save();
+      trackCtx.translate(frontAxleX, -W_tractor / 2);
+      trackCtx.rotate(c.steer_safe);
+      trackCtx.fillStyle = '#10b981';
+      trackCtx.fillRect(-wheelL / 2, -wheelW, wheelL, wheelW);
+      trackCtx.restore();
+
+      // Right Front Wheel
+      trackCtx.save();
+      trackCtx.translate(frontAxleX, W_tractor / 2);
+      trackCtx.rotate(c.steer_safe);
+      trackCtx.fillStyle = '#10b981';
+      trackCtx.fillRect(-wheelL / 2, 0, wheelL, wheelW);
+      trackCtx.restore();
+
+      trackCtx.restore(); // restore tractor
+      trackCtx.restore(); // restore camera transform
+
+      // 2. Draw Rolling Strip Charts
+      renderStripChart(chartLtrCanvas, chartLtrCtx, charts, 'ltr', 1.0, 0.6, 0.85);
+      renderStripChart(chartThetaCanvas, chartThetaCtx, charts, 'theta_a', 35.0, 15.0, 25.0);
+    }
+
+    function renderStripChart(canvas, ctx, data, key, yMax, warnY, critY) {
+      const w = canvas.width;
+      const h = canvas.height;
+      ctx.clearRect(0, 0, w, h);
+      if (!data || data.length < 2) return;
+
+      const padB = 6;
+      const padT = 6;
+      const usableH = h - padB - padT;
+
+      // Threshold lines
+      const yCritPx = h - padB - (critY / yMax) * usableH;
+      ctx.beginPath();
+      ctx.strokeStyle = 'rgba(239, 68, 68, 0.4)';
+      ctx.setLineDash([4, 4]);
+      ctx.moveTo(0, yCritPx);
+      ctx.lineTo(w, yCritPx);
+      ctx.stroke();
+
+      const yWarnPx = h - padB - (warnY / yMax) * usableH;
+      ctx.beginPath();
+      ctx.strokeStyle = 'rgba(245, 158, 11, 0.3)';
+      ctx.moveTo(0, yWarnPx);
+      ctx.lineTo(w, yWarnPx);
+      ctx.stroke();
+      ctx.setLineDash([]);
+
+      // Strip Line
+      ctx.beginPath();
+      const n = data.length;
+      for (let i = 0; i < n; i++) {
+        const pt = data[i];
+        const val = Math.min(yMax, Math.max(0, pt[key]));
+        const xPx = (i / (n - 1)) * w;
+        const yPx = h - padB - (val / yMax) * usableH;
+        if (i === 0) ctx.moveTo(xPx, yPx);
+        else ctx.lineTo(xPx, yPx);
+      }
+      ctx.strokeStyle = key === 'ltr' ? '#10b981' : '#38bdf8';
+      ctx.lineWidth = 2.0;
+      ctx.stroke();
+    }
+
+    // Start Animation Loop
+    render();
   </script>
 </body>
 </html>
