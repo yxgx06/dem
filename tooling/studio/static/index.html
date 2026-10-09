@@ -333,7 +333,7 @@
       document.getElementById('lblUptime').textContent = formatUptime(data.uptime_seconds);
       document.getElementById('lblTicks').textContent = data.ticks_total.toLocaleString();
       document.getElementById('lblInterventions').textContent = data.interventions_total.toLocaleString();
-      document.getElementById('lblCoords').textContent = `X: ${c.x.toFixed(1)}m | Y: ${c.y.toFixed(1)}m`;
+      document.getElementById('lblCoords').textContent = `X: ${c.x.toFixed(1)}m | Y: ${c.y.toFixed(1)}m | e_y: ${c.lateral_error_cm}cm`;
       document.getElementById('lblSpeed').textContent = `${(c.vx * 3.6).toFixed(1)} km/h`;
 
       // Weather Pill
@@ -411,22 +411,25 @@
       trackCtx.scale(scale, scale);
       trackCtx.translate(-camX, -camY);
 
+      function getRoadY(x) {
+        return 12.0 * Math.sin(0.003 * x) + 5.0 * Math.cos(0.006 * x);
+      }
+
       // Draw Highway Road Surface
       const roadHalfWidth = 4.2;
       trackCtx.beginPath();
-      // Draw road boundary from camX - 40 to camX + 40
-      const startX = camX - 45;
-      const endX = camX + 45;
+      const startX = camX - 50;
+      const endX = camX + 50;
 
       // Fill road strip
       trackCtx.beginPath();
-      for (let x = startX; x <= endX; x += 2) {
-        const y_ref = 15.0 * Math.sin(0.006 * x) + 8.0 * Math.cos(0.015 * x);
+      for (let x = startX; x <= endX; x += 1.5) {
+        const y_ref = getRoadY(x);
         if (x === startX) trackCtx.moveTo(x, y_ref - roadHalfWidth);
         else trackCtx.lineTo(x, y_ref - roadHalfWidth);
       }
-      for (let x = endX; x >= startX; x -= 2) {
-        const y_ref = 15.0 * Math.sin(0.006 * x) + 8.0 * Math.cos(0.015 * x);
+      for (let x = endX; x >= startX; x -= 1.5) {
+        const y_ref = getRoadY(x);
         trackCtx.lineTo(x, y_ref + roadHalfWidth);
       }
       trackCtx.closePath();
@@ -447,10 +450,10 @@
       // Dashed Centerline
       trackCtx.beginPath();
       trackCtx.setLineDash([1.5, 1.5]);
-      trackCtx.strokeStyle = '#64748b';
-      trackCtx.lineWidth = 0.15;
+      trackCtx.strokeStyle = '#94a3b8';
+      trackCtx.lineWidth = 0.18;
       for (let x = startX; x <= endX; x += 1.5) {
-        const y_ref = 15.0 * Math.sin(0.006 * x) + 8.0 * Math.cos(0.015 * x);
+        const y_ref = getRoadY(x);
         if (x === startX) trackCtx.moveTo(x, y_ref);
         else trackCtx.lineTo(x, y_ref);
       }

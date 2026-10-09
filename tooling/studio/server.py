@@ -1,15 +1,15 @@
 from __future__ import annotations
 
+from collections import deque
 import json
 import math
 import threading
 import time
-from collections import deque
 from http.server import BaseHTTPRequestHandler, HTTPServer
 from typing import Any
 
 from egga.config import REPO_ROOT
-from egga.plant.articulated import ArticulatedParams, ArticulatedVehicle
+from egga.plant.articulated import ArticulatedParams, ArticulatedState, ArticulatedVehicle
 from egga.supervisor.friction_circle import (
     FrictionCirclePolicy,
     FrictionDemand,
@@ -39,7 +39,9 @@ class LiveVehicleSimulator:
 
         # Physical Plant and Safety Guard
         self.veh = ArticulatedVehicle(ArticulatedParams(cg_height2=2.4))
-        self.veh.reset(vx=22.0, theta_a0=0.0)
+        # Initialize vehicle centered precisely on highway centerline
+        y0, psi0, _ = self._get_road_reference(0.0)
+        self.veh.state = ArticulatedState(x=0.0, y=y0, psi1=psi0, vx=22.0, theta_a=0.0)
         self.jk_cfg = JackknifeConfig()
 
         # Telemetry History Ring Buffers
@@ -80,25 +82,25 @@ class LiveVehicleSimulator:
                 self.forced_mu = 0.85
                 msg = "Environment restored to dry asphalt (mu=0.85)"
             elif event_type == "swerve":
-                self.disturbance_steer = 0.12
-                self.disturbance_ax = -3.5
-                self.disturbance_expiry = now + 1.2
-                msg = "Obstacle emergency swerve triggered (-3.5 m/s^2 brake, 0.12 rad steer)"
+                self.disturbance_steer = 0.08
+                self.disturbance_ax = -3.2
+                self.disturbance_expiry = now + 1.0
+                msg = "Obstacle emergency swerve triggered (-3.2 m/s^2 brake, 0.08 rad steer)"
             elif event_type == "gust":
-                # Lateral impulse on trailer
-                self.disturbance_steer = -0.09
+                self.disturbance_steer = -0.05
                 self.disturbance_expiry = now + 0.8
                 msg = "Crosswind gust hit trailer: dynamic lateral oscillation injected"
             else:
                 msg = f"Unknown event type: {event_type}"
         return msg
 
-    def _get_road_reference(self, x: float) -> tuple[float, float, float]:
+    @staticmethod
+    def _get_road_reference(x: float) -> tuple[float, float, float]:
         """Calculates road centerline lateral coordinate, heading angle, and curvature."""
-        # Continuous winding highway trajectory
-        y_ref = 15.0 * math.sin(0.006 * x) + 8.0 * math.cos(0.015 * x)
-        dy_dx = 15.0 * 0.006 * math.cos(0.006 * x) - 8.0 * 0.015 * math.sin(0.015 * x)
-        d2y_dx2 = -15.0 * (0.006**2) * math.sin(0.006 * x) - 8.0 * (0.015**2) * math.cos(0.015 * x)
+        # Realistic highway curvature with gentle high-speed interstate radii (R > 400m)
+        y_ref = 12.0 * math.sin(0.003 * x) + 5.0 * math.cos(0.006 * x)
+        dy_dx = 12.0 * 0.003 * math.cos(0.003 * x) - 5.0 * 0.006 * math.sin(0.006 * x)
+        d2y_dx2 = -12.0 * (0.003**2) * math.sin(0.003 * x) - 5.0 * (0.006**2) * math.cos(0.006 * x)
 
         psi_ref = math.atan(dy_dx)
         denom = (1.0 + dy_dx**2) ** 1.5
@@ -126,16 +128,15 @@ class LiveVehicleSimulator:
                 if self.forced_mu is not None:
                     mu = self.forced_mu
                 else:
-                    # Autonomous environmental cycle every 60 seconds
                     cycle = (t % 60.0)
                     if 25.0 <= cycle < 35.0:
-                        mu = 0.38  # Wet road stretch
+                        mu = 0.38
                         self.weather_mode = "rain"
                     elif 45.0 <= cycle < 52.0:
-                        mu = 0.28  # Icy bridge deck
+                        mu = 0.28
                         self.weather_mode = "ice"
                     else:
-                        mu = 0.85  # Clean dry highway
+                        mu = 0.85
                         self.weather_mode = "dry"
 
                 # Check active manual disturbances
@@ -146,22 +147,25 @@ class LiveVehicleSimulator:
                     steer_dist = 0.0
                     ax_dist = 0.0
 
-                # Highway tracking lane keeping controller
-                pos_x = self.veh.state.x
-                pos_y = self.veh.state.y
-                psi1 = self.veh.state.psi1
-                vx = max(self.veh.state.vx, 8.0)
-
-                y_ref, psi_ref, kappa_ref = self._get_road_reference(pos_x)
-                ey = pos_y - y_ref
-                epsi = psi1 - psi_ref
-
-                # Nominal steering request (feedforward curvature + feedback error correction)
+                s = self.veh.state
+                vx = max(s.vx, 8.0)
                 wheelbase = 3.8
-                steer_nominal = math.atan(wheelbase * kappa_ref) - 0.04 * ey - 0.6 * epsi
-                steer_req = steer_nominal + steer_dist
 
-                # Target speed regulation (~22 m/s / 80 km/h)
+                # Measure tracking error at the tractor front axle (Stanley formulation)
+                lf = 1.4
+                xf = s.x + lf * math.cos(s.psi1)
+                yf = s.y + lf * math.sin(s.psi1)
+
+                yr, psi_r, kappa_r = self._get_road_reference(xf)
+                ey = yr - yf
+                epsi = math.atan2(math.sin(psi_r - s.psi1), math.cos(psi_r - s.psi1))
+
+                # Stanley path tracking: feedforward curvature + cross-track + heading alignment
+                delta_ff = math.atan(wheelbase * kappa_r)
+                delta_fb = epsi + math.atan2(1.2 * ey, vx)
+                steer_req = delta_ff + 0.8 * delta_fb + steer_dist
+
+                # Longitudinal cruise control
                 target_speed = 22.0 if mu > 0.6 else 16.0
                 ax_nominal = 0.6 * (target_speed - vx)
                 ax_req = min(max(ax_nominal + ax_dist, -4.5), 1.5)
@@ -178,13 +182,13 @@ class LiveVehicleSimulator:
 
                 # 2. Articulated Jackknife & Rollover Barrier Guard
                 jk_inp = JackknifeInputs(
-                    theta_a=self.veh.state.theta_a,
-                    theta_a_dot=(self.veh.state.r1 - self.veh.state.r2),
+                    theta_a=s.theta_a,
+                    theta_a_dot=(s.r1 - s.r2),
                     vx=vx,
                     mu=mu,
-                    ltr=abs(self.veh.state.theta_a * 1.6),
+                    ltr=abs(s.theta_a * 1.4),
                     steer_cmd_req=steer_req,
-                    steer_rate_req=(steer_req - self.veh.state.r1) / self.dt,
+                    steer_rate_req=(steer_req - s.r1) / self.dt,
                 )
                 jk_out = step_jackknife_guard(self.jk_cfg, jk_inp)
 
@@ -198,7 +202,11 @@ class LiveVehicleSimulator:
 
                 if is_intervening:
                     self.intervention_count += 1
-                    steer_safe = jk_out.steer_cmd_safe
+                    # Guarded steering clamped strictly within friction circle limits
+                    raw_safe = jk_out.steer_cmd_safe
+                    steer_safe = min(
+                        max(raw_safe, -fc_alloc.delta_max_coupled), fc_alloc.delta_max_coupled
+                    )
                     ax_safe = fc_alloc.ax_safe - (0.5 * jk_out.trailer_brake_pressure)
                 else:
                     steer_safe = min(
@@ -221,12 +229,16 @@ class LiveVehicleSimulator:
 
                 current_mode = mode_names[mode_idx]
 
+                y_center_actual, _, _ = self._get_road_reference(res.state.x)
+                lateral_deviation = res.state.y - y_center_actual
+
                 frame = {
                     "t": t,
                     "tick": self.tick_count,
                     "x": round(res.state.x, 2),
                     "y": round(res.state.y, 2),
-                    "y_ref": round(y_ref, 2),
+                    "y_ref": round(y_center_actual, 2),
+                    "lateral_error_cm": round(abs(lateral_deviation) * 100, 1),
                     "psi1": round(res.state.psi1, 3),
                     "psi2": round(res.state.psi1 - res.state.theta_a, 3),
                     "vx": round(res.state.vx, 2),
@@ -304,7 +316,6 @@ SIMULATOR = LiveVehicleSimulator(tick_rate_hz=25.0)
 
 class StudioHandler(BaseHTTPRequestHandler):
     def log_message(self, format: str, *args: Any) -> None:
-        # Suppress noisy standard HTTP access logging for clean terminal
         pass
 
     def do_GET(self) -> None:
