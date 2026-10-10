@@ -69,3 +69,7 @@ $RECYCLE.BIN/
 
 # Keep the (empty for now) codegen package despite the MATLAB codegen/ rule above
 !src/egga/codegen/
+
+# Scratch and Root Screenshots
+scratch_*
+/*.png
