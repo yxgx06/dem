@@ -27,6 +27,22 @@ class ArticulatedParams:
 
     gravity: float = 9.80665
     tau_air: float = 0.25  # Pneumatic brake transport latency (s)
+    max_brake_pressure_bar: float = 6.5  # Full pneumatic brake line supply (bar)
+
+    @property
+    def wheelbase(self) -> float:
+        """Tractor wheelbase (m): lf + lr."""
+        return self.lf + self.lr
+
+    @property
+    def understeer_gradient(self) -> float:
+        """Tractor neutral/understeer gradient Kus (rad / (m/s^2)):
+
+        Kus = (m1 * lr / (L * Cf1)) - (m1 * lf / (L * Cr1))
+        """
+        w_f = self.m1 * self.lr / self.wheelbase
+        w_r = self.m1 * self.lf / self.wheelbase
+        return (w_f / self.cf1) - (w_r / self.cr1)
 
 
 @dataclass(frozen=True)

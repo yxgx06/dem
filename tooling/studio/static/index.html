@@ -3,206 +3,1135 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>EGGA Studio — 24/7 Continuous Safety Telemetry</title>
+  <title>EGGA Studio — Continuous Safety Telemetry & Path Tracking</title>
+  
+  <!-- Modern Aerospace & Automotive Typography -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:ital,wght@0,400;0,500;0,600;0,700;1,400&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+
+  <!-- Three.js Real 3D Virtual Environment Engine -->
+  <script src="/three.min.js"></script>
+  <script>
+    if (typeof THREE === 'undefined') {
+      document.write('<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"><\/script>');
+    }
+  </script>
+
   <style>
     :root {
-      --bg: #070b13;
-      --card-bg: #0f172a;
-      --card-border: #1e293b;
+      --bg: #040711;
+      --bg-card: rgba(11, 18, 33, 0.82);
+      --bg-card-hover: rgba(16, 26, 48, 0.90);
+      --border-card: rgba(255, 255, 255, 0.08);
+      --border-card-bright: rgba(56, 189, 248, 0.35);
+      
       --accent: #3b82f6;
-      --accent-glow: rgba(59, 130, 246, 0.35);
-      --text: #f8fafc;
-      --text-muted: #94a3b8;
-      --danger: #ef4444;
-      --warning: #f59e0b;
-      --success: #10b981;
+      --accent-glow: rgba(59, 130, 246, 0.4);
       --cyan: #06b6d4;
-      --purple: #8b5cf6;
+      --cyan-glow: rgba(6, 182, 212, 0.35);
+      --success: #10b981;
+      --success-glow: rgba(16, 185, 129, 0.35);
+      --warning: #f59e0b;
+      --warning-glow: rgba(245, 158, 11, 0.4);
+      --danger: #ef4444;
+      --danger-glow: rgba(239, 68, 68, 0.45);
+      
+      --text: #f8fafc;
+      --text-dim: #94a3b8;
+      --text-muted: #64748b;
+      
+      --font-ui: "Plus Jakarta Sans", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      --font-mono: "JetBrains Mono", ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
     }
-    * { box-sizing: border-box; margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, monospace; }
-    body { background: var(--bg); color: var(--text); padding: 14px; overflow-x: hidden; }
 
-    /* Top Navigation Bar */
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    
+    body {
+      background: radial-gradient(circle at 50% 0%, #0c162b 0%, #050813 50%, #020409 100%);
+      color: var(--text);
+      font-family: var(--font-ui);
+      padding: 12px 16px 24px 16px;
+      min-height: 100vh;
+      overflow-x: hidden;
+      -webkit-font-smoothing: antialiased;
+      -moz-osx-font-smoothing: grayscale;
+    }
+
+    /* Scrollbars */
+    ::-webkit-scrollbar { width: 6px; height: 6px; }
+    ::-webkit-scrollbar-track { background: rgba(0, 0, 0, 0.25); }
+    ::-webkit-scrollbar-thumb { background: #1e293b; border-radius: 3px; }
+    ::-webkit-scrollbar-thumb:hover { background: #334155; }
+
+    /* Top Navigation Header */
     header {
-      display: flex; justify-content: space-between; align-items: center;
-      border-bottom: 1px solid var(--card-border); padding-bottom: 12px; margin-bottom: 12px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding-bottom: 10px;
+      margin-bottom: 10px;
+      border-bottom: 1px solid var(--border-card);
+      flex-wrap: wrap;
+      gap: 10px;
     }
-    .brand { display: flex; align-items: center; gap: 14px; }
-    .brand h1 { font-size: 1.2rem; font-weight: 700; letter-spacing: 0.06em; color: #fff; }
+    
+    .brand-section {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      flex-wrap: wrap;
+    }
+
+    .brand-title {
+      font-size: 1.25rem;
+      font-weight: 800;
+      letter-spacing: 0.08em;
+      background: linear-gradient(135deg, #ffffff 40%, #94a3b8 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
     .status-badge {
-      display: inline-flex; align-items: center; gap: 6px;
-      background: rgba(16, 185, 129, 0.12); color: var(--success);
-      border: 1px solid rgba(16, 185, 129, 0.4); font-size: 0.75rem;
-      padding: 3px 10px; border-radius: 9999px; font-weight: 700;
-      letter-spacing: 0.05em; text-transform: uppercase;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      background: rgba(16, 185, 129, 0.12);
+      border: 1px solid rgba(16, 185, 129, 0.35);
+      color: #34d399;
+      font-size: 0.70rem;
+      font-weight: 700;
+      letter-spacing: 0.08em;
+      padding: 4px 9px;
+      border-radius: 9999px;
+      text-transform: uppercase;
+      font-family: var(--font-mono);
     }
+    
     .pulse-dot {
-      width: 7px; height: 7px; border-radius: 50%; background: var(--success);
-      animation: pulse 1.4s infinite;
+      width: 7px;
+      height: 7px;
+      border-radius: 50%;
+      background: #10b981;
+      box-shadow: 0 0 8px #10b981;
+      animation: pulse-dot 1.8s infinite cubic-bezier(0.4, 0, 0.6, 1);
     }
-    @keyframes pulse {
+
+    @keyframes pulse-dot {
       0% { transform: scale(0.9); opacity: 1; }
       50% { transform: scale(1.4); opacity: 0.4; }
       100% { transform: scale(0.9); opacity: 1; }
     }
-    .meta-metrics { display: flex; gap: 18px; font-size: 0.8rem; color: var(--text-muted); font-family: monospace; }
-    .meta-metrics span b { color: var(--text); }
 
-    /* Event Injection Command Bar */
-    .command-bar {
-      display: flex; align-items: center; justify-content: space-between;
-      background: var(--card-bg); border: 1px solid var(--card-border);
-      border-radius: 8px; padding: 10px 16px; margin-bottom: 14px; gap: 12px;
+    .meta-metrics {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      font-size: 0.76rem;
+      color: var(--text-muted);
+      font-family: var(--font-mono);
+      background: rgba(15, 23, 42, 0.6);
+      border: 1px solid var(--border-card);
+      padding: 5px 12px;
+      border-radius: 6px;
     }
-    .cmd-group { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
-    .cmd-title { font-size: 0.75rem; text-transform: uppercase; color: var(--text-muted); font-weight: 700; margin-right: 6px; }
+    .meta-metrics span b { color: var(--text); }
+    .meta-metrics .btn-header-tool {
+      background: transparent;
+      border: 1px solid rgba(255,255,255,0.1);
+      color: var(--text-dim);
+      font-size: 0.70rem;
+      padding: 2px 7px;
+      border-radius: 4px;
+      cursor: pointer;
+      font-family: var(--font-mono);
+      transition: all 0.15s ease;
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+    }
+    .meta-metrics .btn-header-tool:hover {
+      background: rgba(255,255,255,0.06);
+      color: #fff;
+      border-color: rgba(255,255,255,0.25);
+    }
+
+    /* Simulation Engine Bar */
+    .engine-bar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      background: rgba(11, 18, 33, 0.90);
+      backdrop-filter: blur(16px);
+      border: 1px solid rgba(56, 189, 248, 0.25);
+      border-radius: 8px;
+      padding: 7px 14px;
+      margin-bottom: 10px;
+      gap: 10px;
+      flex-wrap: wrap;
+    }
+    .engine-select-group {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+    .engine-label {
+      font-size: 0.70rem;
+      font-weight: 800;
+      letter-spacing: 0.08em;
+      color: #38bdf8;
+      font-family: var(--font-mono);
+      margin-right: 4px;
+    }
+    .btn-engine {
+      background: rgba(30, 41, 59, 0.85);
+      color: #94a3b8;
+      border: 1px solid rgba(51, 65, 85, 0.8);
+      padding: 5px 11px;
+      border-radius: 6px;
+      font-size: 0.72rem;
+      font-weight: 700;
+      font-family: var(--font-mono);
+      cursor: pointer;
+      transition: all 0.15s ease;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+    }
+    .btn-engine:hover {
+      background: rgba(56, 189, 248, 0.15);
+      color: #38bdf8;
+      border-color: rgba(56, 189, 248, 0.4);
+    }
+    .btn-engine.active {
+      background: rgba(56, 189, 248, 0.22);
+      color: #38bdf8;
+      border-color: #38bdf8;
+      box-shadow: 0 0 10px rgba(56, 189, 248, 0.35);
+    }
+    .btn-engine.active-matlab {
+      background: rgba(245, 158, 11, 0.22);
+      color: #fbbf24;
+      border-color: #f59e0b;
+      box-shadow: 0 0 10px rgba(245, 158, 11, 0.35);
+    }
+    .engine-dot {
+      width: 7px;
+      height: 7px;
+      border-radius: 50%;
+      background: #64748b;
+    }
+    .engine-dot.active {
+      background: #10b981;
+      box-shadow: 0 0 8px #10b981;
+    }
+    .matlab-controls {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+    .matlab-select {
+      background: #0b1329;
+      color: #f1f5f9;
+      border: 1px solid rgba(245, 158, 11, 0.45);
+      border-radius: 5px;
+      padding: 4px 8px;
+      font-size: 0.72rem;
+      font-family: var(--font-mono);
+      font-weight: 600;
+      outline: none;
+      cursor: pointer;
+    }
+    .btn-matlab-run {
+      background: rgba(245, 158, 11, 0.2);
+      border: 1px solid rgba(245, 158, 11, 0.7);
+      color: #fef08a;
+      font-size: 0.72rem;
+      padding: 4px 9px;
+      border-radius: 5px;
+      font-weight: 700;
+      cursor: pointer;
+    }
+    .btn-matlab-run:hover {
+      background: rgba(245, 158, 11, 0.35);
+      color: #fff;
+    }
+    .badge-matlab {
+      background: rgba(245, 158, 11, 0.15);
+      color: #f59e0b;
+      border: 1px solid rgba(245, 158, 11, 0.4);
+      font-size: 0.70rem;
+      font-weight: 700;
+      padding: 3px 7px;
+      border-radius: 4px;
+    }
+
+    /* 5-Stage Proving Ground Mission Strip */
+    .proving-ground-strip {
+      display: grid;
+      grid-template-columns: auto repeat(5, 1fr);
+      gap: 6px;
+      background: rgba(10, 16, 30, 0.95);
+      border: 1px solid rgba(245, 158, 11, 0.35);
+      border-radius: 6px;
+      padding: 6px 10px;
+      margin-bottom: 10px;
+      align-items: center;
+    }
+    .pg-title {
+      font-size: 0.68rem;
+      font-weight: 800;
+      color: #f59e0b;
+      letter-spacing: 0.08em;
+      font-family: var(--font-mono);
+      white-space: nowrap;
+      padding-right: 6px;
+    }
+    .pg-stage {
+      background: rgba(15, 23, 42, 0.85);
+      border: 1px solid rgba(100, 116, 139, 0.3);
+      border-radius: 4px;
+      padding: 4px 6px;
+      font-size: 0.66rem;
+      font-family: var(--font-mono);
+      color: #94a3b8;
+      text-align: center;
+      transition: all 0.2s ease;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    .pg-stage.active {
+      background: rgba(245, 158, 11, 0.25);
+      border-color: #f59e0b;
+      color: #fef08a;
+      font-weight: 800;
+      box-shadow: 0 0 8px rgba(245, 158, 11, 0.35);
+    }
+
+    /* Speed Control & Scenario Control Strip */
+    .speed-control-strip {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      background: rgba(11, 18, 33, 0.85);
+      backdrop-filter: blur(16px);
+      border: 1px solid var(--border-card);
+      border-radius: 8px;
+      padding: 7px 14px;
+      margin-bottom: 10px;
+      gap: 12px;
+      flex-wrap: wrap;
+    }
+    .cmd-group {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+    .cmd-title {
+      font-size: 0.70rem;
+      font-weight: 800;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      color: var(--text-muted);
+      font-family: var(--font-mono);
+    }
     .btn-cmd {
-      background: #1e293b; color: #cbd5e1; border: 1px solid #334155;
-      padding: 5px 12px; border-radius: 6px; font-size: 0.75rem; font-weight: 600;
-      cursor: pointer; transition: all 0.15s ease;
+      background: rgba(30, 41, 59, 0.75);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      color: var(--text-dim);
+      padding: 5px 10px;
+      border-radius: 6px;
+      font-size: 0.72rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.15s ease;
+      font-family: var(--font-mono);
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
     }
-    .btn-cmd:hover { background: #334155; color: #fff; transform: translateY(-1px); }
-    .btn-ice { border-color: rgba(6, 182, 212, 0.5); }
-    .btn-ice:hover { background: rgba(6, 182, 212, 0.2); }
-    .btn-swerve { border-color: rgba(245, 158, 11, 0.5); }
-    .btn-swerve:hover { background: rgba(245, 158, 11, 0.2); }
+    .btn-cmd:hover {
+      background: rgba(255, 255, 255, 0.06);
+      color: #fff;
+      border-color: rgba(255, 255, 255, 0.25);
+    }
+    .btn-hazard { background: rgba(239, 68, 68, 0.15); border-color: rgba(239, 68, 68, 0.4); color: #fca5a5; }
+    .btn-hazard:hover { background: rgba(239, 68, 68, 0.28); color: #fff; }
+    .btn-swerve { background: rgba(245, 158, 11, 0.15); border-color: rgba(245, 158, 11, 0.4); color: #fef08a; }
+    .btn-swerve:hover { background: rgba(245, 158, 11, 0.28); color: #fff; }
+    .btn-reset { background: rgba(59, 130, 246, 0.15); border-color: rgba(59, 130, 246, 0.4); color: #93c5fd; }
+    .btn-speed {
+      background: rgba(30, 41, 59, 0.85);
+      color: #94a3b8;
+      border: 1px solid rgba(51, 65, 85, 0.9);
+      padding: 4px 9px;
+      border-radius: 5px;
+      font-size: 0.72rem;
+      font-weight: 700;
+      cursor: pointer;
+    }
+    .btn-speed.active {
+      background: rgba(56, 189, 248, 0.25);
+      color: #38bdf8;
+      border-color: #38bdf8;
+      box-shadow: 0 0 8px rgba(56, 189, 248, 0.35);
+    }
     .weather-pill {
-      font-size: 0.75rem; font-weight: 700; padding: 4px 10px; border-radius: 4px;
-      font-family: monospace; text-transform: uppercase;
+      font-size: 0.72rem;
+      font-weight: 700;
+      padding: 4px 10px;
+      border-radius: 5px;
+      font-family: var(--font-mono);
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
     }
-    .weather-dry { background: rgba(16, 185, 129, 0.15); color: var(--success); border: 1px solid var(--success); }
-    .weather-rain { background: rgba(59, 130, 246, 0.15); color: var(--accent); border: 1px solid var(--accent); }
+    .weather-dry { background: rgba(16, 185, 129, 0.16); color: var(--success); border: 1px solid var(--success); }
+    .weather-rain { background: rgba(59, 130, 246, 0.16); color: #60a5fa; border: 1px solid var(--accent); }
     .weather-ice { background: rgba(6, 182, 212, 0.2); color: var(--cyan); border: 1px solid var(--cyan); }
 
-    /* Main Grid Layout */
-    .grid-top { display: grid; grid-template-columns: 2.2fr 1fr; gap: 14px; margin-bottom: 14px; }
-    .grid-bottom { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 14px; }
+    /* =========================================================================
+       WORKSPACE MODE SELECTOR STRIP (Ergonomic layout selector)
+       ========================================================================= */
+    .workspace-mode-strip {
+      display: flex;
+      align-items: center;
+      background: linear-gradient(90deg, rgba(15, 23, 42, 0.95), rgba(20, 30, 55, 0.9));
+      border: 1px solid rgba(56, 189, 248, 0.35);
+      border-radius: 8px;
+      padding: 6px 14px;
+      margin-bottom: 12px;
+      gap: 10px;
+      flex-wrap: wrap;
+      box-shadow: 0 3px 14px rgba(0, 0, 0, 0.35);
+    }
+    .workspace-label {
+      font-size: 0.72rem;
+      font-weight: 800;
+      letter-spacing: 0.08em;
+      color: #38bdf8;
+      font-family: var(--font-mono);
+      margin-right: 6px;
+    }
+    .btn-workspace-mode {
+      background: rgba(30, 41, 59, 0.7);
+      color: #94a3b8;
+      border: 1px solid rgba(51, 65, 85, 0.8);
+      padding: 5px 12px;
+      border-radius: 6px;
+      font-size: 0.75rem;
+      font-weight: 700;
+      cursor: pointer;
+      transition: all 0.18s ease;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      font-family: var(--font-mono);
+    }
+    .btn-workspace-mode:hover {
+      background: rgba(56, 189, 248, 0.15);
+      color: #38bdf8;
+      border-color: rgba(56, 189, 248, 0.4);
+    }
+    .btn-workspace-mode.active {
+      background: rgba(56, 189, 248, 0.25);
+      color: #38bdf8;
+      border-color: #38bdf8;
+      box-shadow: 0 0 10px rgba(56, 189, 248, 0.4);
+    }
 
+    /* =========================================================================
+       MAIN SPLIT VIEW CONTAINER (2D Tactical Radar + 3D Virtual Chase)
+       ========================================================================= */
+    #viewSplitGrid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px;
+      margin-bottom: 12px;
+      transition: all 0.2s ease;
+    }
+    /* Full View Overrides */
+    body.mode-3d-full #card2D { display: none; }
+    body.mode-3d-full #card3D { grid-column: 1 / -1; }
+    body.mode-3d-full #card3D .canvas-container { height: 600px; }
+
+    body.mode-2d-full #card3D { display: none; }
+    body.mode-2d-full #card2D { grid-column: 1 / -1; }
+    body.mode-2d-full #card2D .canvas-container { height: 600px; }
+
+    body.mode-oscilloscope #viewSplitGrid {
+      grid-template-columns: 1fr 1fr;
+    }
+    body.mode-oscilloscope .canvas-container { height: 260px; }
+    body.mode-oscilloscope #sectionCharts { margin-bottom: 24px; }
+    body.mode-oscilloscope .strip-chart { height: 160px; }
+
+    /* Common Card Styling */
     .card {
-      background: var(--card-bg); border: 1px solid var(--card-border);
-      border-radius: 8px; padding: 14px; position: relative;
+      background: var(--bg-card);
+      backdrop-filter: blur(16px);
+      border: 1px solid var(--border-card);
+      border-radius: 9px;
+      padding: 10px 14px;
+      position: relative;
+      box-shadow: 0 4px 18px -2px rgba(0, 0, 0, 0.35);
+      transition: border-color 0.2s ease;
     }
+    .card:hover { border-color: var(--border-card-bright); }
+
     .card-title {
-      font-size: 0.75rem; font-weight: 700; text-transform: uppercase;
-      color: var(--text-muted); letter-spacing: 0.06em; margin-bottom: 10px;
-      display: flex; justify-content: space-between; align-items: center;
+      font-size: 0.72rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      color: var(--text-muted);
+      letter-spacing: 0.07em;
+      margin-bottom: 8px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-family: var(--font-mono);
     }
-    .card-title .val-highlight { color: #fff; font-family: monospace; font-size: 0.85rem; }
+    .card-title .val-highlight { color: #fff; font-family: var(--font-mono); font-size: 0.82rem; font-weight: 600; }
 
-    /* Motion Canvas */
-    canvas#trackCanvas {
-      width: 100%; height: 280px; background: #030712; border-radius: 6px;
-      border: 1px solid #1e293b; display: block;
+    /* Canvas Containers */
+    .canvas-container {
+      position: relative;
+      width: 100%;
+      height: 410px;
+      border-radius: 7px;
+      overflow: hidden;
+      border: 1px solid rgba(30, 41, 59, 0.9);
+      background: #02050c;
+      box-shadow: inset 0 2px 10px rgba(0,0,0,0.6);
+      display: block;
+    }
+    canvas#trackCanvas { width: 100%; height: 100%; display: block; cursor: grab; }
+    canvas#trackCanvas:active { cursor: grabbing; }
+
+    #threeWrapper { width: 100%; height: 100%; position: relative; }
+    #threeWrapper canvas { width: 100% !important; height: 100% !important; display: block; }
+
+    /* Tactical HUD Overlay Chips */
+    .canvas-overlay-hud {
+      position: absolute;
+      top: 8px;
+      left: 8px;
+      right: 8px;
+      display: flex;
+      flex-wrap: wrap;
+      gap: 5px;
+      pointer-events: none;
+      z-index: 10;
+    }
+    .hud-chip {
+      background: rgba(10, 15, 28, 0.82);
+      backdrop-filter: blur(8px);
+      border: 1px solid var(--border-card);
+      border-radius: 4px;
+      padding: 3px 7px;
+      font-size: 0.64rem;
+      font-family: var(--font-mono);
+      color: var(--text-dim);
+      pointer-events: auto;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.3);
+    }
+    .hud-chip b { color: var(--text); }
+
+    .canvas-view-controls {
+      display: flex;
+      align-items: center;
+      gap: 4px;
+    }
+    .btn-ctrl {
+      background: rgba(15, 23, 42, 0.85);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      color: var(--text-dim);
+      font-size: 0.66rem;
+      padding: 2px 7px;
+      border-radius: 4px;
+      cursor: pointer;
+      font-family: var(--font-mono);
+      transition: all 0.15s ease;
+    }
+    .btn-ctrl:hover {
+      background: rgba(56, 189, 248, 0.15);
+      color: #38bdf8;
+      border-color: rgba(56, 189, 248, 0.4);
+    }
+    .btn-ctrl.active {
+      background: rgba(56, 189, 248, 0.25);
+      color: #38bdf8;
+      border-color: #38bdf8;
     }
 
-    /* Meters and gauges */
+    .canvas-bottom-bar {
+      position: absolute;
+      bottom: 6px;
+      left: 8px;
+      right: 8px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      pointer-events: none;
+      z-index: 10;
+    }
+    .canvas-hint {
+      background: rgba(10, 15, 28, 0.8);
+      backdrop-filter: blur(6px);
+      border: 1px solid var(--border-card);
+      border-radius: 4px;
+      padding: 2px 7px;
+      font-size: 0.62rem;
+      font-family: var(--font-mono);
+      color: var(--text-muted);
+    }
+
+    /* =========================================================================
+       AUTOMOTIVE COCKPIT INSTRUMENTS DECK
+       ========================================================================= */
+    #cockpitDeck {
+      display: grid;
+      grid-template-columns: 210px 190px 190px 1.55fr 1.35fr;
+      gap: 12px;
+      margin-bottom: 12px;
+    }
+
+    /* Speedometer Card */
+    .cockpit-gauge-card {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      text-align: center;
+      padding: 8px 10px;
+    }
+    .gauge-canvas-wrap {
+      position: relative;
+      width: 155px;
+      height: 155px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .gauge-canvas-wrap canvas {
+      width: 155px;
+      height: 155px;
+      display: block;
+    }
+    .gauge-footer-stats {
+      width: 100%;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-family: var(--font-mono);
+      font-size: 0.68rem;
+      color: var(--text-muted);
+      border-top: 1px solid rgba(255, 255, 255, 0.06);
+      padding-top: 5px;
+      margin-top: 4px;
+    }
+    .gauge-footer-stats b { color: var(--text); }
+
+    /* 4-Tire Contact Patch Quad-Card */
+    .chassis-quad-card {
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+    }
+    .chassis-quad-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 6px;
+      margin-top: 4px;
+    }
+    .tire-card {
+      background: rgba(15, 23, 42, 0.7);
+      border: 1px solid rgba(255, 255, 255, 0.06);
+      border-radius: 6px;
+      padding: 5px 8px;
+      font-family: var(--font-mono);
+      font-size: 0.66rem;
+    }
+    .tire-title {
+      font-weight: 700;
+      color: #38bdf8;
+      display: flex;
+      justify-content: space-between;
+      margin-bottom: 3px;
+    }
+    .tire-val-row {
+      display: flex;
+      justify-content: space-between;
+      color: var(--text-muted);
+      margin-bottom: 1px;
+    }
+    .tire-val-row b { color: var(--text); }
+
+    /* Chassis Stability & Supervisor Card */
+    .safety-supervisor-card {
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+    }
+    .meter-container {
+      margin-bottom: 6px;
+    }
+    .meter-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-size: 0.66rem;
+      font-family: var(--font-mono);
+      color: var(--text-muted);
+      margin-bottom: 2px;
+    }
+    .meter-header span:last-child {
+      color: var(--text);
+      font-weight: 700;
+    }
+    .meter-bar {
+      height: 5px;
+      background: rgba(255, 255, 255, 0.06);
+      border-radius: 9999px;
+      overflow: hidden;
+      position: relative;
+    }
+    .meter-fill {
+      height: 100%;
+      border-radius: 9999px;
+      transition: width 0.15s ease, background 0.15s ease;
+    }
+    .fill-blue { background: #38bdf8; box-shadow: 0 0 6px rgba(56, 189, 248, 0.5); }
+    .fill-ltr { background: linear-gradient(90deg, #10b981 0%, #f59e0b 60%, #ef4444 100%); }
+    .fill-warning { background: #f59e0b; box-shadow: 0 0 6px rgba(245, 158, 11, 0.5); }
+    .fill-danger { background: #ef4444; box-shadow: 0 0 6px rgba(239, 68, 68, 0.6); }
+
     .stat-row {
-      display: flex; justify-content: space-between; align-items: center;
-      padding: 6px 0; border-bottom: 1px solid rgba(255,255,255,0.05); font-size: 0.8rem;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-size: 0.68rem;
+      font-family: var(--font-mono);
+      padding: 3px 0;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.04);
     }
+    .stat-row:last-child { border-bottom: none; }
     .stat-label { color: var(--text-muted); }
-    .stat-val { font-weight: 700; font-family: monospace; }
+    .stat-val { font-weight: 700; color: var(--text); }
 
-    .meter-container { margin-top: 8px; margin-bottom: 10px; }
-    .meter-header { display: flex; justify-content: space-between; font-size: 0.75rem; margin-bottom: 3px; font-family: monospace; }
-    .meter-bar { height: 9px; background: #1e293b; border-radius: 5px; overflow: hidden; position: relative; }
-    .meter-fill { height: 100%; width: 0%; transition: width 0.08s linear; }
-    .fill-blue { background: linear-gradient(90deg, #3b82f6, #60a5fa); }
-    .fill-ltr { background: linear-gradient(90deg, #10b981 0%, #f59e0b 60%, #ef4444 85%); }
-
-    /* Mode Pill */
     .mode-pill {
-      font-size: 0.85rem; font-weight: 800; padding: 6px 14px; border-radius: 6px;
-      text-align: center; font-family: monospace; letter-spacing: 0.05em; margin-bottom: 10px;
+      font-size: 0.68rem;
+      font-weight: 800;
+      padding: 4px 8px;
+      border-radius: 5px;
+      font-family: var(--font-mono);
+      text-align: center;
+      letter-spacing: 0.06em;
+      margin-bottom: 6px;
     }
-    .mode-NOMINAL { background: rgba(16, 185, 129, 0.2); color: var(--success); border: 1px solid var(--success); }
-    .mode-CAUTIOUS { background: rgba(245, 158, 11, 0.2); color: var(--warning); border: 1px solid var(--warning); }
-    .mode-LOW_MU { background: rgba(6, 182, 212, 0.2); color: var(--cyan); border: 1px solid var(--cyan); }
-    .mode-DEGRADED { background: rgba(239, 68, 68, 0.25); color: var(--danger); border: 1px solid var(--danger); animation: danger-pulse 1s infinite alternate; }
-    @keyframes danger-pulse { from { opacity: 0.8; } to { opacity: 1; box-shadow: 0 0 12px rgba(239,68,68,0.4); } }
+    .mode-NOMINAL { background: rgba(16, 185, 129, 0.15); color: #34d399; border: 1px solid rgba(16, 185, 129, 0.4); }
+    .mode-BRAKING { background: rgba(59, 130, 246, 0.18); color: #60a5fa; border: 1px solid rgba(59, 130, 246, 0.5); }
+    .mode-SWERVING { background: rgba(245, 158, 11, 0.2); color: #fbbf24; border: 1px solid rgba(245, 158, 11, 0.5); }
+    .mode-JACKKNIFE_RECOVERY { background: rgba(239, 68, 68, 0.25); color: #f87171; border: 1px solid rgba(239, 68, 68, 0.6); }
 
-    /* Strip Charts */
-    canvas.strip-chart { width: 100%; height: 95px; background: #030712; border-radius: 6px; border: 1px solid #1e293b; display: block; margin-top: 6px; }
+    /* =========================================================================
+       REAL-TIME ENGINEERING OSCILLOSCOPES (Bottom Strip)
+       ========================================================================= */
+    #sectionCharts {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr) 1.25fr;
+      gap: 12px;
+      margin-bottom: 14px;
+    }
+    .strip-chart {
+      width: 100%;
+      height: 98px;
+      display: block;
+      border-radius: 5px;
+      background: rgba(5, 10, 20, 0.7);
+      border: 1px solid rgba(255, 255, 255, 0.05);
+    }
 
-    /* Incident Terminal Console */
     .terminal-box {
-      background: #020617; border: 1px solid #1e293b; border-radius: 6px;
-      height: 120px; overflow-y: auto; padding: 8px; font-family: monospace; font-size: 0.72rem;
+      height: 98px;
+      background: #020409;
+      border: 1px solid rgba(255, 255, 255, 0.06);
+      border-radius: 5px;
+      padding: 6px 8px;
+      font-family: var(--font-mono);
+      font-size: 0.64rem;
+      overflow-y: auto;
+      color: var(--text-dim);
+      display: flex;
+      flex-direction: column;
+      gap: 3px;
     }
-    .terminal-entry { padding: 3px 0; border-bottom: 1px solid rgba(255,255,255,0.03); color: #94a3b8; line-height: 1.3; }
-    .terminal-entry .ts { color: var(--cyan); margin-right: 6px; }
-    .terminal-entry .tag-clamp { color: var(--warning); font-weight: bold; }
-    .terminal-entry .tag-guard { color: var(--danger); font-weight: bold; }
+    .terminal-entry { line-height: 1.35; }
+    .ts { color: var(--text-muted); }
+    .tag-obs { color: #f87171; font-weight: 700; }
+    .tag-clamp { color: #fbbf24; font-weight: 700; }
+    .tag-ok { color: #34d399; font-weight: 700; }
+
+    /* Modal */
+    .modal-overlay {
+      position: fixed;
+      inset: 0;
+      background: rgba(2, 6, 17, 0.82);
+      backdrop-filter: blur(10px);
+      z-index: 9999;
+      display: none;
+      align-items: center;
+      justify-content: center;
+    }
+    .modal-card {
+      background: #0d1527;
+      border: 1px solid var(--border-card-bright);
+      border-radius: 10px;
+      padding: 20px;
+      width: 480px;
+      max-width: 90%;
+      box-shadow: 0 10px 40px rgba(0, 0, 0, 0.7);
+    }
+    .modal-title { font-size: 1.05rem; font-weight: 800; margin-bottom: 12px; color: #fff; }
+    .hotkey-row {
+      display: flex;
+      justify-content: space-between;
+      padding: 6px 0;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+      font-family: var(--font-mono);
+      font-size: 0.75rem;
+    }
+    .kbd-badge {
+      background: rgba(255, 255, 255, 0.1);
+      border: 1px solid rgba(255, 255, 255, 0.2);
+      padding: 2px 6px;
+      border-radius: 4px;
+      color: #38bdf8;
+      font-weight: bold;
+    }
   </style>
 </head>
 <body>
 
-  <!-- Top Header -->
+  <!-- Top Navigation Header -->
   <header>
-    <div class="brand">
-      <h1>EGGA STUDIO</h1>
-      <div class="status-badge"><div class="pulse-dot"></div> 24/7 Continuous Monitoring</div>
-      <div class="status-badge" style="background: rgba(59,130,246,0.12); color: var(--cyan); border-color: rgba(6,182,212,0.4);">ISO 26262 ASIL D</div>
+    <div class="brand-section">
+      <div class="brand-title">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#38bdf8" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2L2 7l10 5 10-5-10-5z"></path><path d="M2 17l10 5 10-5"></path><path d="M2 12l10 5 10-5"></path></svg>
+        <span>EGGA STUDIO</span>
+      </div>
+      <div class="status-badge" id="badgeStatus">
+        <span class="pulse-dot"></span>
+        <span id="txtSupervisorState">SUPERVISOR: CONTINUOUS ACTIVE</span>
+      </div>
     </div>
+    
     <div class="meta-metrics">
       <span>UPTIME: <b id="lblUptime">00:00:00</b></span>
       <span>TICKS: <b id="lblTicks">0</b></span>
-      <span>RATE: <b>25.0 Hz</b></span>
-      <span>INTERVENTIONS: <b id="lblInterventions" style="color: var(--warning);">0</b></span>
+      <span>INTERVENTIONS: <b id="lblInterventions" style="color: var(--cyan);">0</b></span>
+      <button class="btn-header-tool" id="btnAudioMute" onclick="toggleAudio()">
+        <span id="iconAudio">🔊</span> Audio: ON
+      </button>
+      <button class="btn-header-tool" onclick="toggleHotkeysModal(true)">
+        ⌨️ Keys [?]
+      </button>
     </div>
   </header>
 
-  <!-- Event Injection Command Bar -->
-  <div class="command-bar">
-    <div class="cmd-group">
-      <span class="cmd-title">⚡ Live Scenario Injector:</span>
-      <button class="btn-cmd btn-ice" onclick="injectEvent('ice')">❄️ Ice Patch (μ=0.25)</button>
-      <button class="btn-cmd" onclick="injectEvent('rain')">🌧️ Rain (μ=0.42)</button>
-      <button class="btn-cmd btn-swerve" onclick="injectEvent('swerve')">⚠️ Obstacle Swerve</button>
-      <button class="btn-cmd" onclick="injectEvent('gust')">💨 Crosswind Gust</button>
-      <button class="btn-cmd" onclick="injectEvent('dry')">☀️ Dry Highway (μ=0.85)</button>
+  <!-- Simulation Engine Bar (Python vs MATLAB R2025b) -->
+  <div class="engine-bar" id="engineControlBar">
+    <div class="engine-select-group">
+      <span class="engine-label">SIMULATION ENGINE:</span>
+      <button class="btn-engine active" id="btnEnginePython" onclick="setSimulationBackend('python')">
+        <span class="engine-dot active"></span> 🐍 Python EGGA Engine (24/7 Tractor-Trailer)
+      </button>
+      <button class="btn-engine" id="btnEngineMatlab" onclick="setSimulationBackend('matlab')">
+        <span class="engine-dot" id="dotMatlabLive"></span> ⚡ MATLAB Proving Ground Engine (R2025b)
+      </button>
     </div>
+
+    <!-- MATLAB Interactive Controls (visible in MATLAB mode) -->
+    <div class="matlab-controls" id="matlabControlsStrip" style="display: none;">
+      <span class="cmd-title" style="color: #f59e0b;">Controller:</span>
+      <select class="matlab-select" id="selMatlabController" onchange="onMatlabConfigChange()">
+        <option value="rl">RL Adaptive (Actor-Critic Self-Tuning)</option>
+        <option value="simulink">Simulink Native (BicyclePathTracking1.slx)</option>
+        <option value="mpc">MPC Preview (Feedforward + PD)</option>
+        <option value="pid">Fixed Classical PID</option>
+      </select>
+
+      <span class="cmd-title" style="color: #f59e0b; margin-left: 6px;">Mission:</span>
+      <select class="matlab-select" id="selMatlabMission" onchange="onMatlabConfigChange()">
+        <option value="proving_ground">5-Stage Proving Ground RL Mission (75s)</option>
+        <option value="simulink">MATLAB Simulink (BicyclePathTracking1.slx)</option>
+        <option value="rl_env">Standalone RL Gym Training Env</option>
+        <option value="bicycle_master">Master Dynamic Bicycle Model</option>
+      </select>
+
+      <span class="cmd-title" style="color: #f59e0b; margin-left: 6px;">Speed:</span>
+      <select class="matlab-select" id="selMatlabSpeed" style="min-width: 95px;">
+        <option value="36">36 km/h</option>
+        <option value="60">60 km/h</option>
+        <option value="72" selected>72 km/h</option>
+        <option value="90">90 km/h</option>
+        <option value="108">108 km/h</option>
+      </select>
+
+      <button class="btn-cmd btn-matlab-run" id="btnStartMatlab" onclick="startMatlabSimulation()">
+        ▶️ Launch MATLAB
+      </button>
+      <button class="btn-cmd btn-matlab-run" id="btnStopMatlab" onclick="stopMatlabSimulation()" style="display:none; background: rgba(239,68,68,0.25); border-color:#ef4444; color:#fca5a5;">
+        ⏹️ Stop
+      </button>
+      <div class="badge-matlab" id="badgeMatlabStatus">
+        MATLAB: READY (R2025b)
+      </div>
+    </div>
+  </div>
+
+  <!-- MATLAB 5-Stage Proving Ground Mission Strip -->
+  <div class="proving-ground-strip" id="provingGroundStrip" style="display: none;">
+    <div class="pg-title" id="pgTitle">PROVING GROUND TERRAIN:</div>
+    <div class="pg-stage active" id="pgStage1">1. FLAT DRY (0-15s, θ=0°, μ=0.85)</div>
+    <div class="pg-stage" id="pgStage2">2. STEEP UPHILL (15-30s, +10°, μ=0.85)</div>
+    <div class="pg-stage" id="pgStage3">3. UPHILL RAIN (30-45s, +10°, μ=0.50)</div>
+    <div class="pg-stage" id="pgStage4">4. DOWNHILL ICE (45-60s, -10°, μ=0.25)</div>
+    <div class="pg-stage" id="pgStage5">5. DOUBLE LANE CHANGE (60-75s, μ=0.60)</div>
+  </div>
+
+  <!-- Cruising Velocity & Scenario Control Strip -->
+  <div class="speed-control-strip" id="speedControlStrip">
     <div class="cmd-group">
-      <span class="cmd-title">Environment:</span>
+      <span class="cmd-title" style="color: #38bdf8;">Cruising Speed:</span>
+      <input type="range" id="sliderSpeed" min="20" max="130" step="5" value="70" style="width: 130px; cursor: pointer;" oninput="onSpeedSliderInput(this.value)" onchange="onSpeedSliderChange(this.value)">
+      <span id="lblSliderVal" style="font-family: var(--font-mono); font-size: 0.74rem; font-weight: 700; color: #38bdf8; min-width: 55px;">70 km/h</span>
+      
+      <button class="btn-speed" data-speed="40" onclick="setSpeedPreset(40)">40 km/h</button>
+      <button class="btn-speed active" data-speed="70" onclick="setSpeedPreset(70)">70 km/h</button>
+      <button class="btn-speed" data-speed="90" onclick="setSpeedPreset(90)">90 km/h</button>
+      <button class="btn-speed" data-speed="110" onclick="setSpeedPreset(110)">110 km/h</button>
+    </div>
+
+    <div class="cmd-group">
+      <span class="cmd-title">Dynamic Hazards:</span>
+      <button class="btn-cmd btn-hazard" onclick="triggerScenario('spawn_obstacle')">⚠️ Spawn Obstacle [Space]</button>
+      <button class="btn-cmd btn-swerve" onclick="triggerScenario('swerve')">💥 Emergency Swerve [S]</button>
+      <button class="btn-cmd" onclick="triggerScenario('dry')" id="btnScenarioDry">☀️ Dry [1]</button>
+      <button class="btn-cmd" onclick="triggerScenario('rain')" id="btnScenarioRain">🌧️ Rain [2]</button>
+      <button class="btn-cmd" onclick="triggerScenario('ice')" id="btnScenarioIce">❄️ Ice [3]</button>
+      <button class="btn-cmd btn-reset" onclick="triggerScenario('reset')">🔄 Reset [R]</button>
       <div id="weatherPill" class="weather-pill weather-dry">DRY (μ=0.85)</div>
     </div>
   </div>
 
-  <!-- Main Top Grid -->
-  <div class="grid-top">
-    <!-- Left: 2D Live Track Following Canvas -->
-    <div class="card">
+  <!-- WORKSPACE MODE SELECTOR STRIP -->
+  <div class="workspace-mode-strip">
+    <span class="workspace-label">STUDIO WORKSPACE:</span>
+    <button class="btn-workspace-mode active" id="btnModeSplit" onclick="setWorkspaceMode('split')">
+      🔲 Split View (2D Tactical + 3D Chase)
+    </button>
+    <button class="btn-workspace-mode" id="btnMode3D" onclick="setWorkspaceMode('3d')">
+      🌐 3D Full Immersive
+    </button>
+    <button class="btn-workspace-mode" id="btnMode2D" onclick="setWorkspaceMode('2d')">
+      🗺️ 2D Tactical Radar
+    </button>
+    <button class="btn-workspace-mode" id="btnModeOscilloscope" onclick="setWorkspaceMode('oscilloscope')">
+      📊 Engineering Oscilloscopes
+    </button>
+  </div>
+
+  <!-- =========================================================================
+       MAIN SPLIT VIEW CONTAINER: 2D Overhead Radar & 3D Virtual Chase
+       ========================================================================= -->
+  <div id="viewSplitGrid">
+    
+    <!-- LEFT: 2D Tactical Overhead Highway Tracking -->
+    <div class="card" id="card2D">
       <div class="card-title">
-        <span>2D Overhead Highway Tracking (Continuous Camera)</span>
-        <span class="val-highlight" id="lblCoords">X: 0.0 m | Y: 0.0 m</span>
+        <div style="display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
+          <span style="color: #38bdf8; font-weight: 800; display: inline-flex; align-items: center; gap: 6px;">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#38bdf8" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polygon points="1 6 1 22 8 18 16 22 23 18 23 2 16 6 8 2 1 6"></polygon><line x1="8" y1="2" x2="8" y2="18"></line><line x1="16" y1="6" x2="16" y2="22"></line></svg>
+            2D TACTICAL OVERHEAD TRACKING
+          </span>
+          <div class="canvas-view-controls" id="controls2D">
+            <button class="btn-ctrl active" id="btnZoomStd" onclick="setZoom(5.5, this)">Std (6x)</button>
+            <button class="btn-ctrl" id="btnZoomClose" onclick="setZoom(12.0, this)">Close (12x)</button>
+            <button class="btn-ctrl" id="btnZoomWide" onclick="setZoom(3.2, this)">Wide (3x)</button>
+            <button class="btn-ctrl" id="btnFollowCam" onclick="toggleFollowCam(this)">🧭 Chase: OFF</button>
+            <button class="btn-ctrl" onclick="recenterCamera()">🎯 Center</button>
+          </div>
+        </div>
+        <span class="val-highlight" id="lblCoords">X: -- m | Y: -- m | e_y: -- cm</span>
       </div>
-      <canvas id="trackCanvas"></canvas>
+      
+      <div class="canvas-container" id="canvasWrapper">
+        <canvas id="trackCanvas"></canvas>
+        
+        <!-- Tactical HUD Chips -->
+        <div class="canvas-overlay-hud">
+          <div class="hud-chip" id="hudLegendTarget" style="border-color: rgba(16, 185, 129, 0.85); color: #10b981; font-weight: 800; background: rgba(16, 185, 129, 0.15);">🟢 ACTUAL TARGET PATH</div>
+          <div class="hud-chip" id="hudLegendActual" style="border-color: rgba(6, 182, 212, 0.85); color: #06b6d4; font-weight: 800; background: rgba(6, 182, 212, 0.15);">🔵 VEHICLE FOLLOWING</div>
+          <div class="hud-chip" id="hudTrackStatus">IN-LANE: e_y = -- cm</div>
+          <div class="hud-chip" id="hudObstacle">OBSTACLE: CLEAR</div>
+          <div class="hud-chip">HEADING: <b id="hudPsi">--°</b></div>
+          <div class="hud-chip">STEER: <b id="hudSteer">--°</b></div>
+        </div>
+
+        <div class="canvas-bottom-bar">
+          <div class="canvas-hint" id="lblBottomHint">💡 Scroll: Zoom • Drag: Pan • Double-Click: Center • [C] Chase</div>
+          <div class="canvas-hint" id="lblCamOffset">Cam: Center Locked</div>
+        </div>
+      </div>
     </div>
 
-    <!-- Right: Friction Circle & Articulation Cockpit -->
-    <div class="card">
+    <!-- RIGHT: 3D Real-Time Photorealistic Highway Simulation & Chase -->
+    <div class="card" id="card3D">
       <div class="card-title">
-        <span>Safety Supervisor State</span>
-        <span class="val-highlight" id="lblSpeed">22.0 m/s</span>
+        <div style="display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
+          <span style="color: #38bdf8; font-weight: 800; display: inline-flex; align-items: center; gap: 6px;">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#38bdf8" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><line x1="2" y1="12" x2="22" y2="12"></line><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"></path></svg>
+            3D REAL VIRTUAL CHASE SIMULATION
+          </span>
+          <div class="canvas-view-controls">
+            <button class="btn-ctrl active" id="btnCamChase" onclick="set3DCameraMode('chase')">🌐 Chase</button>
+            <button class="btn-ctrl" id="btnCamCockpit" onclick="set3DCameraMode('cockpit')">🏎️ Cockpit</button>
+            <button class="btn-ctrl" id="btnCamOrbit" onclick="set3DCameraMode('orbit')">🚁 Orbit</button>
+            <button class="btn-ctrl active" id="btn3DHeadlights" onclick="toggle3DHeadlights()">💡 Lights: ON</button>
+            <button class="btn-ctrl" id="btn3DDayNight" onclick="toggle3DDayNight()">☀️ / 🌙</button>
+            <button class="btn-ctrl" onclick="reset3DCamera()">🎯 Reset</button>
+          </div>
+        </div>
+        <span class="val-highlight" style="color: #34d399;" id="lbl3DFps">60 FPS REAL-TIME</span>
       </div>
 
-      <div id="modePill" class="mode-pill mode-NOMINAL">NOMINAL MODE</div>
+      <div class="canvas-container" id="threeContainer">
+        <div id="threeWrapper"></div>
+        
+        <!-- 3D HUD Overlay Chips -->
+        <div class="canvas-overlay-hud">
+          <div class="hud-chip" id="hud3DCamMode" style="border-color: rgba(56, 189, 248, 0.6); color: #38bdf8; font-weight: 700;">CAM: 🌐 3D CHASE VIEW</div>
+          <div class="hud-chip" id="hud3DEy">e_y = -- cm</div>
+          <div class="hud-chip" id="hud3DRollover">LTR: 0.000</div>
+          <div class="hud-chip" id="hud3DHitch">HITCH θa: 0.0°</div>
+          <div class="hud-chip" id="hud3DClearance">CLEARANCE: SAFE</div>
+        </div>
 
-      <!-- Friction Circle Utilization -->
+        <div class="canvas-bottom-bar">
+          <div class="canvas-hint" id="lbl3DHint">💡 Left-Click Drag: Rotate / Tilt • Wheel: Zoom • [V] Camera Modes • [L] Lights</div>
+          <div class="canvas-hint" id="lbl3DCameraInfo">3D Chase: Smooth Dynamic Following</div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- =========================================================================
+       AUTOMOTIVE COCKPIT INSTRUMENTS DECK (Proving Ground Standard)
+       ========================================================================= -->
+  <div id="cockpitDeck">
+
+    <!-- 1. Circular Speedometer Dial -->
+    <div class="card cockpit-gauge-card" id="cardSpeedo">
+      <div class="card-title" style="width: 100%;">
+        <span>SPEEDOMETER</span>
+        <span class="val-highlight" id="lblSpeedDigit" style="color: #38bdf8;">-- KM/H</span>
+      </div>
+      <div class="gauge-canvas-wrap">
+        <canvas id="speedoCanvas" width="155" height="155"></canvas>
+      </div>
+      <div class="gauge-footer-stats">
+        <span>PWR: <b id="lblEnginePower">0.0 kW</b></span>
+        <span>Ax: <b id="lblAccelLong">0.00 m/s²</b></span>
+      </div>
+    </div>
+
+    <!-- 2. Rotating Steering Wheel Instrument -->
+    <div class="card cockpit-gauge-card" id="cardSteerWheel">
+      <div class="card-title" style="width: 100%;">
+        <span>STEERING WHEEL</span>
+        <span class="val-highlight" id="lblSteerDigit" style="color: #f59e0b;">δ = 0.0°</span>
+      </div>
+      <div class="gauge-canvas-wrap">
+        <canvas id="steerWheelCanvas" width="145" height="145"></canvas>
+      </div>
+      <div class="gauge-footer-stats">
+        <span>HANDWHEEL: <b id="lblSteerHandwheel">0.0°</b></span>
+        <span>RATE: <b id="lblSteerRate">0.0°/s</b></span>
+      </div>
+    </div>
+
+    <!-- 3. Polar Kamm G-G Friction Circle Diagram -->
+    <div class="card cockpit-gauge-card" id="cardKammGg">
+      <div class="card-title" style="width: 100%;">
+        <span>KAMM G-G CIRCLE</span>
+        <span class="val-highlight" id="lblUtilDigit">--%</span>
+      </div>
+      <div class="gauge-canvas-wrap">
+        <canvas id="kammGgCanvas" width="145" height="145"></canvas>
+      </div>
+      <div class="gauge-footer-stats">
+        <span>G-TOTAL: <b id="lblGTotal">0.00 G</b></span>
+        <span>LIMIT: <b id="lblMuG">0.85 G</b></span>
+      </div>
+    </div>
+
+    <!-- 4. 4-Tire Contact Patch & Axle Dynamics Quad-Card -->
+    <div class="card chassis-quad-card" id="cardTires">
+      <div class="card-title">
+        <span>CHASSIS AXLE DYNAMICS</span>
+        <span class="val-highlight" id="lblSideslip">β = 0.0°</span>
+      </div>
+      <div class="chassis-quad-grid">
+        <div class="tire-card">
+          <div class="tire-title"><span>FRONT AXLE</span><span id="lblFzf">35.0 kN</span></div>
+          <div class="tire-val-row"><span>Slip Angle αf:</span><b id="lblAlphaF">0.0°</b></div>
+          <div class="tire-val-row"><span>Lateral Fyf:</span><b id="lblFyf">0.0 kN</b></div>
+        </div>
+        <div class="tire-card">
+          <div class="tire-title"><span>DRIVE AXLE</span><span id="lblFzr">65.0 kN</span></div>
+          <div class="tire-val-row"><span>Slip Angle αr:</span><b id="lblAlphaR">0.0°</b></div>
+          <div class="tire-val-row"><span>Lateral Fyr:</span><b id="lblFyr">0.0 kN</b></div>
+        </div>
+        <div class="tire-card" style="grid-column: 1 / -1;">
+          <div class="tire-title"><span>TRAILER TANDEM BOGIE</span><span id="lblFzt">120.0 kN</span></div>
+          <div class="tire-val-row"><span>Normal Load Fzt:</span><b id="lblFztDetail">120.0 kN</b></div>
+          <div class="tire-val-row"><span>Handling Balance:</span><b id="lblHandlingBalance" style="color: #34d399;">NEUTRAL</b></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 5. Vehicle Dynamics & Safety Supervisor State -->
+    <div class="card safety-supervisor-card" id="cardSafety">
+      <div class="card-title">
+        <span>SUPERVISOR TELEMETRY</span>
+        <span class="val-highlight" id="lblModeStatus">NOMINAL</span>
+      </div>
+      
+      <div id="modePill" class="mode-pill mode-NOMINAL">NOMINAL SUPERVISOR MODE</div>
+
+      <!-- Cross-Track Error Meter -->
       <div class="meter-container">
         <div class="meter-header">
-          <span>Kamm Circle Utilization (ax²+ay² ≤ μg)</span>
-          <span id="lblUtil">0.0%</span>
+          <span>Cross-Track Error e_y (±50 cm):</span>
+          <span id="lblEyMeter">0.0 cm</span>
         </div>
         <div class="meter-bar">
-          <div id="barUtil" class="meter-fill fill-blue" style="width: 0%;"></div>
+          <div id="barEy" class="meter-fill fill-blue" style="width: 0%;"></div>
         </div>
       </div>
 
       <!-- Rollover LTR Meter -->
       <div class="meter-container">
         <div class="meter-header">
-          <span>Trailer Rollover LTR (Limit: 1.00)</span>
+          <span>Rollover LTR (Limit 1.0):</span>
           <span id="lblLtr">0.000</span>
         </div>
         <div class="meter-bar">
@@ -210,119 +1139,1759 @@
         </div>
       </div>
 
-      <!-- Hitch Angle vs Critical Limit -->
+      <!-- Hitch Articulation Angle Meter -->
       <div class="meter-container">
         <div class="meter-header">
-          <span>Hitch Articulation θa / θcrit</span>
-          <span id="lblHitch">0.0° / 24.5°</span>
+          <span>Hitch Articulation θa / θcrit:</span>
+          <span id="lblHitch">0.0° / 72.0°</span>
         </div>
         <div class="meter-bar">
           <div id="barHitch" class="meter-fill fill-blue" style="width: 0%;"></div>
         </div>
       </div>
 
+      <!-- Stat Rows -->
       <div class="stat-row">
-        <span class="stat-label">Active Trailer Tension Drag:</span>
+        <span class="stat-label">Trailer Tension Drag:</span>
         <span class="stat-val" id="lblTrailerBrake" style="color: var(--cyan);">0.00 bar</span>
       </div>
       <div class="stat-row">
-        <span class="stat-label">Kinematic Steering Clamp:</span>
-        <span class="stat-val" id="lblSteerClamp">None</span>
+        <span class="stat-label">Kinematic Clamp:</span>
+        <span class="stat-val" id="lblSteerClamp">Nominal Authority</span>
       </div>
     </div>
+
   </div>
 
-  <!-- Bottom Grid: Live Scrolling Strip Charts & Incident Log -->
-  <div class="grid-bottom">
-    <!-- Chart 1: Rollover LTR Oscilloscope -->
+  <!-- =========================================================================
+       REAL-TIME ENGINEERING OSCILLOSCOPES (Bottom Strip)
+       ========================================================================= -->
+  <div id="sectionCharts">
+    
+    <!-- Chart 1: Lateral Tracking Error e_y (cm) -->
     <div class="card">
       <div class="card-title">
-        <span>Trailer Rollover LTR (Live Stream)</span>
-        <span class="val-highlight" id="lblCurrentLtr">0.00</span>
+        <span>Cross-Track Error e_y</span>
+        <span class="val-highlight" id="lblCurrentEy" style="color: var(--success);">0.0 cm</span>
+      </div>
+      <canvas id="chartEy" class="strip-chart"></canvas>
+    </div>
+
+    <!-- Chart 2: Dual Yaw Rate (r vs r_ref) -->
+    <div class="card">
+      <div class="card-title">
+        <span>Yaw Rate r vs r_ref</span>
+        <span class="val-highlight" id="lblCurrentYaw" style="color: var(--cyan);">0.0°/s</span>
+      </div>
+      <canvas id="chartUtil" class="strip-chart"></canvas>
+    </div>
+
+    <!-- Chart 3: Steering Angle delta -->
+    <div class="card">
+      <div class="card-title">
+        <span>Steer δ & Handwheel</span>
+        <span class="val-highlight" id="lblCurrentSteer">0.0°</span>
       </div>
       <canvas id="chartLtr" class="strip-chart"></canvas>
     </div>
 
-    <!-- Chart 2: Articulation Angle Oscilloscope -->
+    <!-- Chart 4: Rollover LTR & Articulation -->
     <div class="card">
       <div class="card-title">
-        <span>Articulation θa vs Barrier (deg)</span>
-        <span class="val-highlight" id="lblCurrentTheta">0.0°</span>
+        <span>LTR & Hitch θa</span>
+        <span class="val-highlight" id="lblCurrentLtrChart">0.000</span>
       </div>
       <canvas id="chartTheta" class="strip-chart"></canvas>
     </div>
 
-    <!-- Chart 3: Live Incident Terminal Log -->
+    <!-- SOTIF Flight Recorder Console -->
     <div class="card">
       <div class="card-title">
-        <span>SOTIF Incident Flight Recorder</span>
+        <span>SOTIF Flight Recorder</span>
         <span class="val-highlight" style="color: var(--warning);">LIVE STREAM</span>
       </div>
       <div id="terminalConsole" class="terminal-box">
         <div class="terminal-entry"><span class="ts">[BOOT]</span> Continuous 24/7 supervisor flight recorder active.</div>
+        <div class="terminal-entry"><span class="ts">[SYS]</span> Precision automotive proving ground telemetry connected.</div>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- Keyboard Shortcuts Modal -->
+  <div class="modal-overlay" id="hotkeysModal" onclick="toggleHotkeysModal(false)">
+    <div class="modal-card" onclick="event.stopPropagation()">
+      <div class="modal-title">⌨️ Keyboard Shortcuts & Controls</div>
+      <div class="hotkey-row"><span>Spawn Obstacle Ahead</span><span class="kbd-badge">Space</span></div>
+      <div class="hotkey-row"><span>Trigger Emergency Swerve</span><span class="kbd-badge">S</span></div>
+      <div class="hotkey-row"><span>Dry Road (μ = 0.85)</span><span class="kbd-badge">1</span></div>
+      <div class="hotkey-row"><span>Rain Condition (μ = 0.50)</span><span class="kbd-badge">2</span></div>
+      <div class="hotkey-row"><span>Ice Condition (μ = 0.18)</span><span class="kbd-badge">3</span></div>
+      <div class="hotkey-row"><span>Cycle 3D Camera (Chase / Cockpit / Orbit)</span><span class="kbd-badge">V</span></div>
+      <div class="hotkey-row"><span>Toggle 3D Headlights</span><span class="kbd-badge">L</span></div>
+      <div class="hotkey-row"><span>Toggle 2D Follow Camera</span><span class="kbd-badge">C</span></div>
+      <div class="hotkey-row"><span>Reset Origin & Trajectory</span><span class="kbd-badge">R</span></div>
+      <div class="hotkey-row"><span>Center 2D Camera</span><span class="kbd-badge">Home</span></div>
+      <div class="hotkey-row"><span>Zoom In / Out</span><span class="kbd-badge">+ / -</span></div>
+      <div class="hotkey-row"><span>Mute Audio</span><span class="kbd-badge">M</span></div>
+      <div style="margin-top: 14px; text-align: right;">
+        <button class="btn-cmd" onclick="toggleHotkeysModal(false)">Close [Esc]</button>
       </div>
     </div>
   </div>
 
   <script>
-    // --- Canvas & Rendering Engine ---
+    // =========================================================================
+    // AUDIO SYNTHESIS & SOUND EFFECTS ENGINE
+    // =========================================================================
+    let audioCtx = null;
+    let audioMuted = false;
+
+    function getAudioContext() {
+      if (!audioCtx) {
+        const AudioContextClass = window.AudioContext || window.webkitAudioContext;
+        if (AudioContextClass) audioCtx = new AudioContextClass();
+      }
+      if (audioCtx && audioCtx.state === 'suspended') {
+        audioCtx.resume();
+      }
+      return audioCtx;
+    }
+
+    function playTone(freq, type, duration, gainVal = 0.05) {
+      if (audioMuted) return;
+      try {
+        const ctx = getAudioContext();
+        if (!ctx) return;
+        const osc = ctx.createOscillator();
+        const gain = ctx.createGain();
+        osc.type = type || 'sine';
+        osc.frequency.setValueAtTime(freq, ctx.currentTime);
+        gain.gain.setValueAtTime(gainVal, ctx.currentTime);
+        gain.gain.exponentialRampToValueAtTime(0.0001, ctx.currentTime + duration);
+        osc.connect(gain);
+        gain.connect(ctx.destination);
+        osc.start();
+        osc.stop(ctx.currentTime + duration);
+      } catch (e) {}
+    }
+
+    function toggleAudio() {
+      audioMuted = !audioMuted;
+      const btn = document.getElementById('btnAudioMute');
+      const icon = document.getElementById('iconAudio');
+      if (btn && icon) {
+        btn.innerHTML = audioMuted ? '<span id="iconAudio">🔇</span> Audio: OFF' : '<span id="iconAudio">🔊</span> Audio: ON';
+      }
+      if (!audioMuted) playTone(440, 'sine', 0.1, 0.05);
+    }
+
+    function toggleHotkeysModal(show) {
+      const m = document.getElementById('hotkeysModal');
+      if (m) m.style.display = show ? 'flex' : 'none';
+      if (show) playTone(600, 'sine', 0.05, 0.04);
+    }
+
+    // =========================================================================
+    // WORKSPACE MODE SWITCHER (Split / 3D Full / 2D Full / Oscilloscopes)
+    // =========================================================================
+    let currentWorkspaceMode = 'split';
+
+    function setWorkspaceMode(mode) {
+      currentWorkspaceMode = mode;
+      document.body.classList.remove('mode-split', 'mode-3d-full', 'mode-2d-full', 'mode-oscilloscope');
+      if (mode === '3d') document.body.classList.add('mode-3d-full');
+      else if (mode === '2d') document.body.classList.add('mode-2d-full');
+      else if (mode === 'oscilloscope') document.body.classList.add('mode-oscilloscope');
+      else document.body.classList.add('mode-split');
+
+      document.querySelectorAll('.btn-workspace-mode').forEach(b => b.classList.remove('active'));
+      if (mode === 'split') document.getElementById('btnModeSplit').classList.add('active');
+      else if (mode === '3d') document.getElementById('btnMode3D').classList.add('active');
+      else if (mode === '2d') document.getElementById('btnMode2D').classList.add('active');
+      else if (mode === 'oscilloscope') document.getElementById('btnModeOscilloscope').classList.add('active');
+
+      playTone(550, 'sine', 0.06, 0.04);
+      setTimeout(resizeCanvases, 40);
+    }
+
+    // =========================================================================
+    // 2D CANVAS INTERACTION & PAN/ZOOM
+    // =========================================================================
     const trackCanvas = document.getElementById('trackCanvas');
     const trackCtx = trackCanvas.getContext('2d');
+    let currentScale = 5.5;
+    let isFollowCam = false;
+    let panOffsetX = 0;
+    let panOffsetY = 0;
+    let isDragging2D = false;
+    let dragStartX2D = 0, dragStartY2D = 0;
+    let dragStartPanX = 0, dragStartPanY = 0;
+
+    function setZoom(val, btn) {
+      currentScale = Math.max(1.5, Math.min(25.0, val));
+      document.querySelectorAll('#controls2D .btn-ctrl').forEach(b => {
+        if (b.id && b.id.startsWith('btnZoom')) b.classList.remove('active');
+      });
+      if (btn) btn.classList.add('active');
+      playTone(720, 'sine', 0.05, 0.04);
+    }
+
+    function toggleFollowCam(btn) {
+      isFollowCam = !isFollowCam;
+      if (btn) {
+        btn.classList.toggle('active', isFollowCam);
+        btn.textContent = isFollowCam ? '🧭 Chase: ON' : '🧭 Chase: OFF';
+      }
+      playTone(540, 'sine', 0.06, 0.05);
+    }
+
+    function recenterCamera() {
+      panOffsetX = 0;
+      panOffsetY = 0;
+      document.getElementById('lblCamOffset').textContent = 'Cam: Center Locked';
+      playTone(800, 'sine', 0.06, 0.05);
+    }
+
+    const canvasWrapper = document.getElementById('canvasWrapper');
+    canvasWrapper.addEventListener('wheel', (e) => {
+      e.preventDefault();
+      const zoomFactor = e.deltaY < 0 ? 1.15 : 0.87;
+      setZoom(currentScale * zoomFactor, null);
+    }, { passive: false });
+
+    canvasWrapper.addEventListener('mousedown', (e) => {
+      if (e.button === 0) {
+        isDragging2D = true;
+        dragStartX2D = e.clientX;
+        dragStartY2D = e.clientY;
+        dragStartPanX = panOffsetX;
+        dragStartPanY = panOffsetY;
+      }
+    });
+
+    window.addEventListener('mousemove', (e) => {
+      if (isDragging2D) {
+        const dx = e.clientX - dragStartX2D;
+        const dy = e.clientY - dragStartY2D;
+        panOffsetX = dragStartPanX + dx;
+        panOffsetY = dragStartPanY + dy;
+        const dX = Math.round(panOffsetX / currentScale);
+        const dY = Math.round(-panOffsetY / currentScale);
+        document.getElementById('lblCamOffset').textContent = `Cam: Offset [${dX}m, ${dY}m]`;
+      }
+    });
+
+    window.addEventListener('mouseup', () => { isDragging2D = false; });
+    canvasWrapper.addEventListener('dblclick', () => { recenterCamera(); });
+
+    // =========================================================================
+    // 3D REAL-TIME VIRTUAL WORLD ENGINE (Three.js WebGL)
+    // =========================================================================
+    let threeCameraMode = 'chase'; // 'chase', 'cockpit', 'orbit'
+    let threeInitialized = false;
+    let threeScene = null, threeCamera = null, threeRenderer = null;
+    let threeAmbientLight = null, threeHemiLight = null, threeSunLight = null;
+    let threeHeadlightL = null, threeHeadlightR = null, threeHeadlightsEnabled = true;
+    let threeIsNightMode = true;
+
+    // Orbit Controls
+    let orbitAzimuth = 0.0;
+    let orbitElevation = 0.35;
+    let orbitRadius = 22.0;
+    let isDragging3D = false;
+    let dragStartX3D = 0, dragStartY3D = 0;
+    let orbitStartAzimuth = 0, orbitStartElevation = 0;
+    let camSmoothPos = null, camSmoothLookAt = null;
+
+    // 3D Objects
+    let skyMesh = null, terrainMesh = null, roadMesh = null, roadGeom = null, roadMaterial = null;
+    let shoulderMeshL = null, shoulderGeomL = null, shoulderMeshR = null, shoulderGeomR = null;
+    let guardrailMeshL = null, guardrailGeomL = null, guardrailMeshR = null, guardrailGeomR = null;
+    let edgeLineMeshL = null, edgeGeomL = null, edgeLineMeshR = null, edgeGeomR = null;
+    let centerDashedGroup = null;
+    let pathRibbonMesh = null, pathRibbonGeom = null;
+    let evadeCorridorMesh = null, evadeCorridorGeom = null;
+    let trail3DMesh = null, trail3DGeom = null;
+    let tractorGroup = null, trailerGroup = null, passengerCarGroup = null;
+    let steerWheelLeft = null, steerWheelRight = null;
+    let rollingWheelsTractor = [], rollingWheelsTrailer = [], rollingWheelsPassenger = [];
+    let obstacleMeshGroup = null, rainParticles = null, rainGeom = null;
+    let wheelRollAngleTractor = 0, wheelRollAnglePassenger = 0;
+    let groundLightDecal = null;
+
+    function set3DCameraMode(mode) {
+      threeCameraMode = mode;
+      document.querySelectorAll('#card3D .btn-ctrl').forEach(b => {
+        if (b.id && b.id.startsWith('btnCam')) b.classList.remove('active');
+      });
+      if (mode === 'cockpit') document.getElementById('btnCamCockpit').classList.add('active');
+      else if (mode === 'orbit') document.getElementById('btnCamOrbit').classList.add('active');
+      else document.getElementById('btnCamChase').classList.add('active');
+
+      const labels = {
+        chase: 'CAM: 🌐 3D CHASE VIEW',
+        cockpit: 'CAM: 🏎️ 3D COCKPIT VIEW',
+        orbit: 'CAM: 🚁 3D 360° DRONE ORBIT'
+      };
+      document.getElementById('hud3DCamMode').textContent = labels[mode] || 'CAM: 3D VIEW';
+      playTone(600, 'sine', 0.05, 0.04);
+    }
+
+    function toggle3DHeadlights() {
+      threeHeadlightsEnabled = !threeHeadlightsEnabled;
+      const btn = document.getElementById('btn3DHeadlights');
+      if (btn) {
+        btn.classList.toggle('active', threeHeadlightsEnabled);
+        btn.textContent = threeHeadlightsEnabled ? '💡 Lights: ON' : '💡 Lights: OFF';
+      }
+      if (threeHeadlightL) threeHeadlightL.visible = threeHeadlightsEnabled;
+      if (threeHeadlightR) threeHeadlightR.visible = threeHeadlightsEnabled;
+      if (groundLightDecal) groundLightDecal.visible = threeHeadlightsEnabled;
+      playTone(700, 'sine', 0.04, 0.04);
+    }
+
+    function toggle3DDayNight() {
+      threeIsNightMode = !threeIsNightMode;
+      const btn = document.getElementById('btn3DDayNight');
+      if (btn) btn.textContent = threeIsNightMode ? '🌙 Night' : '☀️ Day';
+      if (threeAmbientLight) threeAmbientLight.intensity = threeIsNightMode ? 0.35 : 0.85;
+      if (threeSunLight) threeSunLight.intensity = threeIsNightMode ? 0.25 : 1.2;
+      if (threeScene) {
+        const bgCol = threeIsNightMode ? 0x040814 : 0x1e293b;
+        threeScene.background.setHex(bgCol);
+        if (threeScene.fog) threeScene.fog.color.setHex(bgCol);
+      }
+      playTone(520, 'sine', 0.06, 0.04);
+    }
+
+    function reset3DCamera() {
+      orbitAzimuth = 0.0;
+      orbitElevation = 0.35;
+      orbitRadius = 22.0;
+      camSmoothPos = null;
+      camSmoothLookAt = null;
+      playTone(800, 'sine', 0.05, 0.04);
+    }
+
+    // 3D Canvas Mouse Event Listeners
+    const threeContainer = document.getElementById('threeContainer');
+    threeContainer.addEventListener('mousedown', (e) => {
+      if (e.button === 0) {
+        isDragging3D = true;
+        dragStartX3D = e.clientX;
+        dragStartY3D = e.clientY;
+        orbitStartAzimuth = orbitAzimuth;
+        orbitStartElevation = orbitElevation;
+      }
+    });
+
+    window.addEventListener('mousemove', (e) => {
+      if (isDragging3D) {
+        const dx = e.clientX - dragStartX3D;
+        const dy = e.clientY - dragStartY3D;
+        orbitAzimuth = orbitStartAzimuth - dx * 0.007;
+        orbitElevation = Math.max(0.05, Math.min(1.4, orbitStartElevation + dy * 0.005));
+      }
+    });
+
+    window.addEventListener('mouseup', () => { isDragging3D = false; });
+    threeContainer.addEventListener('wheel', (e) => {
+      e.preventDefault();
+      const zoomDelta = e.deltaY * 0.025;
+      orbitRadius = Math.max(7.0, Math.min(90.0, orbitRadius + zoomDelta));
+    }, { passive: false });
+
+    // =========================================================================
+    // THREE.JS SCENE INITIALIZATION
+    // =========================================================================
+    function ensureThreeInitialized() {
+      if (threeInitialized) return;
+      initThreeWorld();
+    }
+
+    function initThreeWorld() {
+      if (threeInitialized || typeof THREE === 'undefined') return;
+      const wrap = document.getElementById('threeWrapper');
+      if (!wrap) return;
+
+      const w = wrap.clientWidth || 600;
+      const h = wrap.clientHeight || 410;
+
+      // 1. Scene & Atmosphere
+      threeScene = new THREE.Scene();
+      threeScene.background = new THREE.Color(0x040814);
+      threeScene.fog = new THREE.FogExp2(0x040814, 0.0035);
+
+      // 2. Camera
+      threeCamera = new THREE.PerspectiveCamera(54, w / h, 0.3, 1200);
+      threeCamera.position.set(-20, 7, 0);
+
+      // 3. WebGL Renderer
+      threeRenderer = new THREE.WebGLRenderer({ antialias: true, alpha: false, powerPreference: 'high-performance' });
+      threeRenderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
+      threeRenderer.setSize(w, h);
+      threeRenderer.toneMapping = THREE.ACESFilmicToneMapping;
+      threeRenderer.toneMappingExposure = 1.15;
+      wrap.innerHTML = '';
+      wrap.appendChild(threeRenderer.domElement);
+
+      // 4. Lighting Rig
+      threeAmbientLight = new THREE.AmbientLight(0xdbeafe, 0.68);
+      threeScene.add(threeAmbientLight);
+
+      threeHemiLight = new THREE.HemisphereLight(0x38bdf8, 0x111c2e, 0.58);
+      threeScene.add(threeHemiLight);
+
+      threeSunLight = new THREE.DirectionalLight(0xffffff, 0.95);
+      threeSunLight.position.set(60, 90, 50);
+      threeScene.add(threeSunLight);
+
+      // 5. Build Procedural Virtual World
+      buildSkyDome3D();
+      buildTerrain3D();
+      buildRoad3D();
+      buildVehicle3D();
+      buildPathVisualizers3D();
+      buildObstacles3D();
+      buildRainSystem3D();
+
+      threeInitialized = true;
+    }
+
+    function buildSkyDome3D() {
+      const starGeo = new THREE.BufferGeometry();
+      const STAR_COUNT = 750;
+      const starPos = new Float32Array(STAR_COUNT * 3);
+      for (let i = 0; i < STAR_COUNT; i++) {
+        const theta = Math.random() * Math.PI * 2;
+        const phi = Math.random() * Math.PI * 0.45;
+        const rad = 650 + Math.random() * 50;
+        starPos[i * 3]     = rad * Math.sin(phi) * Math.cos(theta);
+        starPos[i * 3 + 1] = rad * Math.cos(phi);
+        starPos[i * 3 + 2] = rad * Math.sin(phi) * Math.sin(theta);
+      }
+      starGeo.setAttribute('position', new THREE.BufferAttribute(starPos, 3));
+      const starMat = new THREE.PointsMaterial({ color: 0xdbeafe, size: 1.5, transparent: true, opacity: 0.85, fog: false });
+      const starField = new THREE.Points(starGeo, starMat);
+      threeScene.add(starField);
+    }
+
+    function buildTerrain3D() {
+      const terrainGeo = new THREE.PlaneGeometry(900, 900, 48, 48);
+      terrainGeo.rotateX(-Math.PI / 2);
+      const pos = terrainGeo.attributes.position;
+      for (let i = 0; i < pos.count; i++) {
+        const x = pos.getX(i);
+        const z = pos.getZ(i);
+        const distFromCenter = Math.abs(z);
+        if (distFromCenter > 16) {
+          const hill = 2.2 * Math.sin(x * 0.02) * Math.cos(z * 0.015) - 0.03 * (distFromCenter - 16);
+          pos.setY(i, -0.35 + hill);
+        } else {
+          pos.setY(i, -0.38);
+        }
+      }
+      terrainGeo.computeVertexNormals();
+
+      const terrainMat = new THREE.MeshStandardMaterial({
+        color: 0x14281c, // rich highway verge terrain
+        roughness: 0.92,
+        metalness: 0.05
+      });
+      terrainMesh = new THREE.Mesh(terrainGeo, terrainMat);
+      threeScene.add(terrainMesh);
+    }
+
+    const ROAD_SEGS = 130;
+    const ROAD_DX = 2.4;
+
+    function buildRoad3D() {
+      roadGeom = new THREE.BufferGeometry();
+      const posArr = new Float32Array(ROAD_SEGS * 2 * 3);
+      const idxArr = new Uint16Array((ROAD_SEGS - 1) * 6);
+
+      for (let i = 0; i < ROAD_SEGS - 1; i++) {
+        const v0 = i * 2, v1 = i * 2 + 1, v2 = (i + 1) * 2, v3 = (i + 1) * 2 + 1;
+        const ptr = i * 6;
+        idxArr[ptr]     = v0; idxArr[ptr + 1] = v1; idxArr[ptr + 2] = v2;
+        idxArr[ptr + 3] = v2; idxArr[ptr + 4] = v1; idxArr[ptr + 5] = v3;
+      }
+      roadGeom.setAttribute('position', new THREE.BufferAttribute(posArr, 3));
+      roadGeom.setIndex(new THREE.BufferAttribute(idxArr, 1));
+
+      roadMaterial = new THREE.MeshStandardMaterial({
+        color: 0x242e3f, // high-visibility slate asphalt
+        roughness: 0.70,
+        metalness: 0.15
+      });
+      roadMesh = new THREE.Mesh(roadGeom, roadMaterial);
+      threeScene.add(roadMesh);
+
+      // Road Shoulders
+      shoulderGeomL = roadGeom.clone();
+      shoulderGeomR = roadGeom.clone();
+      shoulderMaterial = new THREE.MeshStandardMaterial({ color: 0x242a36, roughness: 0.85, metalness: 0.1 });
+      shoulderMeshL = new THREE.Mesh(shoulderGeomL, shoulderMaterial);
+      shoulderMeshR = new THREE.Mesh(shoulderGeomR, shoulderMaterial);
+      threeScene.add(shoulderMeshL);
+      threeScene.add(shoulderMeshR);
+
+      // Galvanized Steel Guardrails
+      guardrailGeomL = roadGeom.clone();
+      guardrailGeomR = roadGeom.clone();
+      const guardrailMat = new THREE.MeshStandardMaterial({ color: 0x94a3b8, metalness: 0.85, roughness: 0.28 });
+      guardrailMeshL = new THREE.Mesh(guardrailGeomL, guardrailMat);
+      guardrailMeshR = new THREE.Mesh(guardrailGeomR, guardrailMat);
+      threeScene.add(guardrailMeshL);
+      threeScene.add(guardrailMeshR);
+
+      // Solid White Edge Lines
+      edgeGeomL = roadGeom.clone();
+      edgeGeomR = roadGeom.clone();
+      const edgeLineMat = new THREE.MeshBasicMaterial({ color: 0xf8fafc });
+      edgeLineMeshL = new THREE.Mesh(edgeGeomL, edgeLineMat);
+      edgeLineMeshR = new THREE.Mesh(edgeGeomR, edgeLineMat);
+      threeScene.add(edgeLineMeshL);
+      threeScene.add(edgeLineMeshR);
+
+      // Dashed Yellow Center Line Ribbons
+      centerDashedGroup = new THREE.Group();
+      const DASH_COUNT = 45;
+      const dashGeo = new THREE.PlaneGeometry(3.8, 0.24);
+      dashGeo.rotateX(-Math.PI / 2);
+      const dashMat = new THREE.MeshBasicMaterial({ color: 0xfbbf24 });
+      for (let i = 0; i < DASH_COUNT; i++) {
+        const m = new THREE.Mesh(dashGeo, dashMat);
+        centerDashedGroup.add(m);
+      }
+      threeScene.add(centerDashedGroup);
+    }
+
+    function buildVehicle3D() {
+      // 1. TRACTOR CABIN
+      tractorGroup = new THREE.Group();
+      const L_tractor = 4.6, W_tractor = 2.45, H_tractor = 3.3;
+
+      // Cabin Body Shell
+      const cabMat = new THREE.MeshStandardMaterial({ color: 0x1e3a5f, metalness: 0.75, roughness: 0.25 }); // metallic sapphire blue
+      const cabGeo = new THREE.BoxGeometry(L_tractor * 0.72, H_tractor * 0.75, W_tractor);
+      const cabMesh = new THREE.Mesh(cabGeo, cabMat);
+      cabMesh.position.set(L_tractor * 0.1, H_tractor * 0.52, 0);
+      tractorGroup.add(cabMesh);
+
+      // Engine Hood
+      const hoodGeo = new THREE.BoxGeometry(L_tractor * 0.32, H_tractor * 0.42, W_tractor * 0.94);
+      const hoodMesh = new THREE.Mesh(hoodGeo, cabMat);
+      hoodMesh.position.set(L_tractor * 0.42, H_tractor * 0.32, 0);
+      tractorGroup.add(hoodMesh);
+
+      // Windshield
+      const glassMat = new THREE.MeshStandardMaterial({ color: 0x091424, metalness: 0.9, roughness: 0.1, transparent: true, opacity: 0.85 });
+      const windGeo = new THREE.BoxGeometry(0.1, H_tractor * 0.35, W_tractor * 0.88);
+      const windMesh = new THREE.Mesh(windGeo, glassMat);
+      windMesh.position.set(L_tractor * 0.26, H_tractor * 0.65, 0);
+      windMesh.rotation.z = -0.15;
+      tractorGroup.add(windMesh);
+
+      // Chrome Radiator Grille
+      const chromeMat = new THREE.MeshStandardMaterial({ color: 0xe2e8f0, metalness: 0.95, roughness: 0.15 });
+      const grilleGeo = new THREE.BoxGeometry(0.08, H_tractor * 0.36, W_tractor * 0.75);
+      const grilleMesh = new THREE.Mesh(grilleGeo, chromeMat);
+      grilleMesh.position.set(L_tractor * 0.58, H_tractor * 0.30, 0);
+      tractorGroup.add(grilleMesh);
+
+      // Aerodynamic Roof Deflector
+      const aeroGeo = new THREE.ConeGeometry(W_tractor * 0.5, L_tractor * 0.35, 4);
+      aeroGeo.rotateZ(Math.PI / 2);
+      aeroGeo.rotateY(Math.PI / 4);
+      const aeroMesh = new THREE.Mesh(aeroGeo, cabMat);
+      aeroMesh.position.set(0, H_tractor * 0.96, 0);
+      tractorGroup.add(aeroMesh);
+
+      // Dual Chrome Exhaust Stacks
+      const stackGeo = new THREE.CylinderGeometry(0.07, 0.07, H_tractor * 0.9, 12);
+      const stackL = new THREE.Mesh(stackGeo, chromeMat);
+      stackL.position.set(-L_tractor * 0.22, H_tractor * 0.6, -W_tractor * 0.52);
+      const stackR = new THREE.Mesh(stackGeo, chromeMat);
+      stackR.position.set(-L_tractor * 0.22, H_tractor * 0.6, W_tractor * 0.52);
+      tractorGroup.add(stackL);
+      tractorGroup.add(stackR);
+
+      // Tractor Wheels
+      const tireMat = new THREE.MeshStandardMaterial({ color: 0x111827, roughness: 0.9, metalness: 0.1 });
+      const rimMat = new THREE.MeshStandardMaterial({ color: 0xcbd5e1, metalness: 0.9, roughness: 0.2 });
+
+      function makeWheel() {
+        const wg = new THREE.Group();
+        const tire = new THREE.Mesh(new THREE.CylinderGeometry(0.52, 0.52, 0.35, 20), tireMat);
+        tire.rotation.x = Math.PI / 2;
+        const rim = new THREE.Mesh(new THREE.CylinderGeometry(0.32, 0.32, 0.36, 16), rimMat);
+        rim.rotation.x = Math.PI / 2;
+        wg.add(tire);
+        wg.add(rim);
+        return wg;
+      }
+
+      rollingWheelsTractor = [];
+      // Front steer wheels
+      steerWheelLeft = new THREE.Group();
+      steerWheelRight = new THREE.Group();
+      const wFL = makeWheel(); const wFR = makeWheel();
+      steerWheelLeft.add(wFL); steerWheelRight.add(wFR);
+      steerWheelLeft.position.set(L_tractor * 0.38, 0.52, -W_tractor * 0.48);
+      steerWheelRight.position.set(L_tractor * 0.38, 0.52, W_tractor * 0.48);
+      tractorGroup.add(steerWheelLeft); tractorGroup.add(steerWheelRight);
+      rollingWheelsTractor.push(wFL, wFR);
+
+      // Rear dual drive axles
+      const rX1 = -L_tractor * 0.22; const rX2 = -L_tractor * 0.44;
+      [rX1, rX2].forEach(rx => {
+        [-1, 1].forEach(side => {
+          const w = makeWheel();
+          w.position.set(rx, 0.52, side * W_tractor * 0.46);
+          tractorGroup.add(w);
+          rollingWheelsTractor.push(w);
+        });
+      });
+
+      // Crystal LED Headlights & Spotlights (NO VOLUMETRIC CONES)
+      const ledMat = new THREE.MeshBasicMaterial({ color: 0xfef08a });
+      const hlL = new THREE.Mesh(new THREE.BoxGeometry(0.12, 0.16, 0.25), ledMat);
+      hlL.position.set(L_tractor * 0.58, 0.65, -0.9);
+      const hlR = new THREE.Mesh(new THREE.BoxGeometry(0.12, 0.16, 0.25), ledMat);
+      hlR.position.set(L_tractor * 0.58, 0.65, 0.9);
+      tractorGroup.add(hlL); tractorGroup.add(hlR);
+
+      threeHeadlightL = new THREE.SpotLight(0xfef08a, 3.5, 95, Math.PI / 6, 0.6, 1.2);
+      threeHeadlightL.position.set(L_tractor * 0.6, 0.7, -0.9);
+      const targetL = new THREE.Object3D();
+      targetL.position.set(L_tractor * 0.6 + 45, 0, -0.9);
+      tractorGroup.add(targetL);
+      threeHeadlightL.target = targetL;
+      tractorGroup.add(threeHeadlightL);
+
+      threeHeadlightR = new THREE.SpotLight(0xfef08a, 3.5, 95, Math.PI / 6, 0.6, 1.2);
+      threeHeadlightR.position.set(L_tractor * 0.6, 0.7, 0.9);
+      const targetR = new THREE.Object3D();
+      targetR.position.set(L_tractor * 0.6 + 45, 0, 0.9);
+      tractorGroup.add(targetR);
+      threeHeadlightR.target = targetR;
+      tractorGroup.add(threeHeadlightR);
+
+      threeScene.add(tractorGroup);
+
+      // 2. 53FT COMMERCIAL SEMITRAILER CONTAINER
+      trailerGroup = new THREE.Group();
+      const L_trailer = 13.5, W_trailer = 2.55, H_trailer = 4.1;
+
+      // Trailer Box Body
+      const trailerMat = new THREE.MeshStandardMaterial({ color: 0x475569, metalness: 0.45, roughness: 0.4 });
+      const boxGeo = new THREE.BoxGeometry(L_trailer, H_trailer * 0.72, W_trailer);
+      const boxMesh = new THREE.Mesh(boxGeo, trailerMat);
+      boxMesh.position.set(-L_trailer * 0.48, H_trailer * 0.52, 0);
+      trailerGroup.add(boxMesh);
+
+      // DOT Red/White Conspicuity Tape along bottom
+      const tapeMat = new THREE.MeshBasicMaterial({ color: 0xef4444 });
+      const tapeGeo = new THREE.BoxGeometry(L_trailer * 0.96, 0.08, W_trailer + 0.02);
+      const tapeMesh = new THREE.Mesh(tapeGeo, tapeMat);
+      tapeMesh.position.set(-L_trailer * 0.48, H_trailer * 0.18, 0);
+      trailerGroup.add(tapeMesh);
+
+      // Trailer Tandem Wheels
+      rollingWheelsTrailer = [];
+      const tX1 = -L_trailer * 0.78, tX2 = -L_trailer * 0.90;
+      [tX1, tX2].forEach(tx => {
+        [-1, 1].forEach(side => {
+          const w = makeWheel();
+          w.position.set(tx, 0.52, side * W_trailer * 0.46);
+          trailerGroup.add(w);
+          rollingWheelsTrailer.push(w);
+        });
+      });
+
+      // Active Brake Taillights
+      const brakeMat = new THREE.MeshBasicMaterial({ color: 0xef4444 });
+      const brakeL = new THREE.Mesh(new THREE.BoxGeometry(0.08, 0.2, 0.35), brakeMat);
+      brakeL.position.set(-L_trailer * 0.98, 0.8, -W_trailer * 0.42);
+      const brakeR = new THREE.Mesh(new THREE.BoxGeometry(0.08, 0.2, 0.35), brakeMat);
+      brakeR.position.set(-L_trailer * 0.98, 0.8, W_trailer * 0.42);
+      trailerGroup.add(brakeL); trailerGroup.add(brakeR);
+
+      threeScene.add(trailerGroup);
+
+      // Soft Ground Illumination Decal
+      const decalGeo = new THREE.PlaneGeometry(28, 9);
+      decalGeo.rotateX(-Math.PI / 2);
+      const decalMat = new THREE.MeshBasicMaterial({
+        color: 0xfef08a,
+        transparent: true,
+        opacity: 0.12,
+        blending: THREE.AdditiveBlending
+      });
+      groundLightDecal = new THREE.Mesh(decalGeo, decalMat);
+      groundLightDecal.position.set(16, 0.02, 0);
+      tractorGroup.add(groundLightDecal);
+    }
+
+    function buildPathVisualizers3D() {
+      // Green Target Spline Ribbon
+      pathRibbonGeom = new THREE.BufferGeometry();
+      const pPos = new Float32Array(ROAD_SEGS * 2 * 3);
+      const pIdx = new Uint16Array((ROAD_SEGS - 1) * 6);
+      for (let i = 0; i < ROAD_SEGS - 1; i++) {
+        const v0 = i * 2, v1 = i * 2 + 1, v2 = (i + 1) * 2, v3 = (i + 1) * 2 + 1;
+        const ptr = i * 6;
+        pIdx[ptr] = v0; pIdx[ptr+1] = v1; pIdx[ptr+2] = v2;
+        pIdx[ptr+3] = v2; pIdx[ptr+4] = v1; pIdx[ptr+5] = v3;
+      }
+      pathRibbonGeom.setAttribute('position', new THREE.BufferAttribute(pPos, 3));
+      pathRibbonGeom.setIndex(new THREE.BufferAttribute(pIdx, 1));
+      const ribbonMat = new THREE.MeshBasicMaterial({ color: 0x10b981, transparent: true, opacity: 0.75, side: THREE.DoubleSide });
+      pathRibbonMesh = new THREE.Mesh(pathRibbonGeom, ribbonMat);
+      threeScene.add(pathRibbonMesh);
+
+      // Trajectory History Trail
+      trail3DGeom = pathRibbonGeom.clone();
+      const trailMat = new THREE.MeshBasicMaterial({ color: 0x06b6d4, transparent: true, opacity: 0.85, side: THREE.DoubleSide });
+      trail3DMesh = new THREE.Mesh(trail3DGeom, trailMat);
+      threeScene.add(trail3DMesh);
+
+      // Evasion Hazard Ribbon
+      evadeCorridorGeom = pathRibbonGeom.clone();
+      const evadeMat = new THREE.MeshBasicMaterial({ color: 0xfbbf24, transparent: true, opacity: 0.85, side: THREE.DoubleSide });
+      evadeCorridorMesh = new THREE.Mesh(evadeCorridorGeom, evadeMat);
+      evadeCorridorMesh.visible = false;
+      threeScene.add(evadeCorridorMesh);
+    }
+
+    function buildObstacles3D() {
+      obstacleMeshGroup = new THREE.Group();
+      const obsGeo = new THREE.BoxGeometry(4.6, 1.8, 2.1);
+      const obsMat = new THREE.MeshStandardMaterial({ color: 0xef4444, metalness: 0.3, roughness: 0.6 });
+      const obsMesh = new THREE.Mesh(obsGeo, obsMat);
+      obsMesh.position.set(0, 0.9, 0);
+      obstacleMeshGroup.add(obsMesh);
+
+      // Warning Strobe
+      const strobe = new THREE.PointLight(0xf59e0b, 2.5, 25);
+      strobe.position.set(0, 2.2, 0);
+      obstacleMeshGroup.add(strobe);
+      obstacleMeshGroup.visible = false;
+      threeScene.add(obstacleMeshGroup);
+    }
+
+    function buildRainSystem3D() {
+      const RAIN_COUNT = 1400;
+      rainGeom = new THREE.BufferGeometry();
+      const rPos = new Float32Array(RAIN_COUNT * 3);
+      for (let i = 0; i < RAIN_COUNT; i++) {
+        rPos[i * 3]     = (Math.random() - 0.5) * 110;
+        rPos[i * 3 + 1] = Math.random() * 32;
+        rPos[i * 3 + 2] = (Math.random() - 0.5) * 110;
+      }
+      rainGeom.setAttribute('position', new THREE.BufferAttribute(rPos, 3));
+      const rainMat = new THREE.PointsMaterial({ color: 0x93c5fd, size: 0.28, transparent: true, opacity: 0.65 });
+      rainParticles = new THREE.Points(rainGeom, rainMat);
+      rainParticles.visible = false;
+      threeScene.add(rainParticles);
+    }
+
+    // =========================================================================
+    // ROAD MATHEMATICAL COORDINATE LOOKUP
+    // =========================================================================
+    function getRoadY(x) {
+      if (latestData && latestData.road) {
+        const r = latestData.road;
+        const a1 = r.amp1 !== undefined ? r.amp1 : 20.0;
+        const f1 = r.freq1 !== undefined ? r.freq1 : 0.0035;
+        const a2 = r.amp2 !== undefined ? r.amp2 : 12.0;
+        const f2 = r.freq2 !== undefined ? r.freq2 : 0.0075;
+        const p2 = r.phase2 !== undefined ? r.phase2 : 0.5;
+        return a1 * Math.sin(f1 * x) + a2 * Math.cos(f2 * x + p2);
+      }
+      return 0.0;
+    }
+
+    function getRoadDy(x) {
+      if (latestData && latestData.road) {
+        const r = latestData.road;
+        const a1 = r.amp1 !== undefined ? r.amp1 : 20.0;
+        const f1 = r.freq1 !== undefined ? r.freq1 : 0.0035;
+        const a2 = r.amp2 !== undefined ? r.amp2 : 12.0;
+        const f2 = r.freq2 !== undefined ? r.freq2 : 0.0075;
+        const p2 = r.phase2 !== undefined ? r.phase2 : 0.5;
+        return a1 * f1 * Math.cos(f1 * x) - a2 * f2 * Math.sin(f2 * x + p2);
+      }
+      return 0.0;
+    }
+
+    // =========================================================================
+    // CANVAS GAUGES (Speedometer, Steering Wheel, Kamm Circle)
+    // =========================================================================
+    const speedoCanvas = document.getElementById('speedoCanvas');
+    const speedoCtx = speedoCanvas ? speedoCanvas.getContext('2d') : null;
+
+    const steerWheelCanvas = document.getElementById('steerWheelCanvas');
+    const steerWheelCtx = steerWheelCanvas ? steerWheelCanvas.getContext('2d') : null;
+
+    const kammGgCanvas = document.getElementById('kammGgCanvas');
+    const kammGgCtx = kammGgCanvas ? kammGgCanvas.getContext('2d') : null;
+
+    function renderSpeedometerGauge(curKmh, tgtKmh, pwrKw, ax) {
+      if (!speedoCtx) return;
+      const w = speedoCanvas.width;
+      const h = speedoCanvas.height;
+      speedoCtx.clearRect(0, 0, w, h);
+
+      const cx = w / 2;
+      const cy = h / 2 + 6;
+      const r = Math.min(w, h) * 0.40;
+
+      const startAngle = Math.PI * 0.75;
+      const endAngle = Math.PI * 2.25;
+      const maxSpeed = 140.0;
+
+      // Outer Dial Track
+      speedoCtx.beginPath();
+      speedoCtx.arc(cx, cy, r, startAngle, endAngle);
+      speedoCtx.strokeStyle = 'rgba(255, 255, 255, 0.1)';
+      speedoCtx.lineWidth = 6;
+      speedoCtx.stroke();
+
+      // Colored Speed Range Arc (0 to curKmh)
+      const speedNorm = Math.min(1.0, Math.max(0, curKmh / maxSpeed));
+      const curAngle = startAngle + speedNorm * (endAngle - startAngle);
+
+      speedoCtx.beginPath();
+      speedoCtx.arc(cx, cy, r, startAngle, curAngle);
+      const grad = speedoCtx.createLinearGradient(0, cy + r, w, cy - r);
+      grad.addColorStop(0, '#10b981');
+      grad.addColorStop(0.5, '#38bdf8');
+      grad.addColorStop(1, '#f59e0b');
+      speedoCtx.strokeStyle = grad;
+      speedoCtx.lineWidth = 6;
+      speedoCtx.stroke();
+
+      // Major Ticks (every 20 km/h)
+      for (let s = 0; s <= maxSpeed; s += 20) {
+        const ang = startAngle + (s / maxSpeed) * (endAngle - startAngle);
+        const cos = Math.cos(ang), sin = Math.sin(ang);
+        const x1 = cx + (r - 7) * cos, y1 = cy + (r - 7) * sin;
+        const x2 = cx + (r - 1) * cos, y2 = cy + (r - 1) * sin;
+        speedoCtx.beginPath();
+        speedoCtx.moveTo(x1, y1);
+        speedoCtx.lineTo(x2, y2);
+        speedoCtx.strokeStyle = 'rgba(255, 255, 255, 0.4)';
+        speedoCtx.lineWidth = 1.5;
+        speedoCtx.stroke();
+
+        // Tick Labels
+        const tx = cx + (r - 14) * cos, ty = cy + (r - 14) * sin;
+        speedoCtx.font = '7px monospace';
+        speedoCtx.fillStyle = '#64748b';
+        speedoCtx.textAlign = 'center';
+        speedoCtx.textBaseline = 'middle';
+        speedoCtx.fillText(s.toString(), tx, ty);
+      }
+
+      // Target Speed Marker Bug
+      if (tgtKmh > 0 && tgtKmh <= maxSpeed) {
+        const tgtAng = startAngle + (tgtKmh / maxSpeed) * (endAngle - startAngle);
+        const bx = cx + r * Math.cos(tgtAng), by = cy + r * Math.sin(tgtAng);
+        speedoCtx.beginPath();
+        speedoCtx.arc(bx, by, 3.5, 0, Math.PI * 2);
+        speedoCtx.fillStyle = '#10b981';
+        speedoCtx.fill();
+      }
+
+      // Sweeping Needle
+      speedoCtx.beginPath();
+      speedoCtx.moveTo(cx, cy);
+      const nx = cx + (r - 5) * Math.cos(curAngle);
+      const ny = cy + (r - 5) * Math.sin(curAngle);
+      speedoCtx.lineTo(nx, ny);
+      speedoCtx.strokeStyle = '#38bdf8';
+      speedoCtx.lineWidth = 2.5;
+      speedoCtx.stroke();
+
+      // Center Boss Cap
+      speedoCtx.beginPath();
+      speedoCtx.arc(cx, cy, 5, 0, Math.PI * 2);
+      speedoCtx.fillStyle = '#f8fafc';
+      speedoCtx.fill();
+
+      // Digital Speed Readout
+      speedoCtx.font = 'bold 15px monospace';
+      speedoCtx.fillStyle = '#ffffff';
+      speedoCtx.textAlign = 'center';
+      speedoCtx.textBaseline = 'middle';
+      speedoCtx.fillText(curKmh.toFixed(1), cx, cy + 18);
+
+      speedoCtx.font = '7px monospace';
+      speedoCtx.fillStyle = '#38bdf8';
+      speedoCtx.fillText('KM/H', cx, cy + 28);
+    }
+
+    function renderSteeringWheelGauge(steerDeg, handwheelDeg, deltaMaxDeg) {
+      if (!steerWheelCtx) return;
+      const w = steerWheelCanvas.width;
+      const h = steerWheelCanvas.height;
+      steerWheelCtx.clearRect(0, 0, w, h);
+
+      const cx = w / 2;
+      const cy = h / 2 - 2;
+      const r = Math.min(w, h) * 0.38;
+
+      // Outer Rim
+      steerWheelCtx.save();
+      steerWheelCtx.translate(cx, cy);
+      // Handwheel rotates by handwheelDeg
+      const rad = (handwheelDeg || 0) * (Math.PI / 180);
+      steerWheelCtx.rotate(rad);
+
+      // Rim circle
+      steerWheelCtx.beginPath();
+      steerWheelCtx.arc(0, 0, r, 0, Math.PI * 2);
+      steerWheelCtx.strokeStyle = '#334155';
+      steerWheelCtx.lineWidth = 7;
+      steerWheelCtx.stroke();
+
+      // Grip contour
+      steerWheelCtx.beginPath();
+      steerWheelCtx.arc(0, 0, r, 0, Math.PI * 2);
+      steerWheelCtx.strokeStyle = '#0f172a';
+      steerWheelCtx.lineWidth = 3;
+      steerWheelCtx.stroke();
+
+      // 3 Spokes (Left, Right, Bottom)
+      steerWheelCtx.beginPath();
+      // Left spoke
+      steerWheelCtx.moveTo(0, 0); steerWheelCtx.lineTo(-r + 3, 0);
+      // Right spoke
+      steerWheelCtx.moveTo(0, 0); steerWheelCtx.lineTo(r - 3, 0);
+      // Bottom spoke
+      steerWheelCtx.moveTo(0, 0); steerWheelCtx.lineTo(0, r - 3);
+      steerWheelCtx.strokeStyle = '#475569';
+      steerWheelCtx.lineWidth = 4;
+      steerWheelCtx.stroke();
+
+      // Center Hub
+      steerWheelCtx.beginPath();
+      steerWheelCtx.arc(0, 0, 11, 0, Math.PI * 2);
+      steerWheelCtx.fillStyle = '#1e293b';
+      steerWheelCtx.strokeStyle = '#38bdf8';
+      steerWheelCtx.lineWidth = 1.5;
+      steerWheelCtx.fill();
+      steerWheelCtx.stroke();
+
+      // Top Center Tape Marker (Yellow Racing Stripe at 12 o'clock)
+      steerWheelCtx.beginPath();
+      steerWheelCtx.arc(0, 0, r, -Math.PI / 2 - 0.12, -Math.PI / 2 + 0.12);
+      steerWheelCtx.strokeStyle = '#f59e0b';
+      steerWheelCtx.lineWidth = 7;
+      steerWheelCtx.stroke();
+
+      steerWheelCtx.restore();
+
+      // Zero-center tick indicator
+      steerWheelCtx.beginPath();
+      steerWheelCtx.moveTo(cx, cy - r - 6);
+      steerWheelCtx.lineTo(cx, cy - r - 2);
+      steerWheelCtx.strokeStyle = '#38bdf8';
+      steerWheelCtx.lineWidth = 2;
+      steerWheelCtx.stroke();
+
+      // Digital readout below
+      steerWheelCtx.font = 'bold 9px monospace';
+      steerWheelCtx.fillStyle = '#f8fafc';
+      steerWheelCtx.textAlign = 'center';
+      steerWheelCtx.fillText(`δ: ${steerDeg > 0 ? '+' : ''}${steerDeg.toFixed(1)}°`, cx, h - 8);
+    }
+
+    function renderKammGgRadar(c) {
+      if (!kammGgCtx) return;
+      const w = kammGgCanvas.width;
+      const h = kammGgCanvas.height;
+      kammGgCtx.clearRect(0, 0, w, h);
+
+      const cx = w / 2;
+      const cy = h / 2 - 4;
+      const maxR = Math.min(w, h) * 0.40;
+
+      const mu = c.mu || 0.85;
+      const g = 9.81;
+      const aMax = mu * g;
+
+      // Coordinate Crosshairs
+      kammGgCtx.lineWidth = 1;
+      kammGgCtx.strokeStyle = 'rgba(51, 65, 85, 0.6)';
+      kammGgCtx.beginPath();
+      kammGgCtx.moveTo(cx, 6);
+      kammGgCtx.lineTo(cx, h - 14);
+      kammGgCtx.moveTo(6, cy);
+      kammGgCtx.lineTo(w - 6, cy);
+      kammGgCtx.stroke();
+
+      // Concentric G-force rings (0.25g, 0.50g, 0.75g, 1.0g)
+      [0.25, 0.50, 0.75].forEach(frac => {
+        kammGgCtx.beginPath();
+        kammGgCtx.arc(cx, cy, maxR * frac, 0, Math.PI * 2);
+        kammGgCtx.strokeStyle = 'rgba(51, 65, 85, 0.35)';
+        kammGgCtx.setLineDash([2, 3]);
+        kammGgCtx.stroke();
+      });
+      kammGgCtx.setLineDash([]);
+
+      // Friction Boundary Circle (μ * g)
+      kammGgCtx.beginPath();
+      kammGgCtx.arc(cx, cy, maxR, 0, Math.PI * 2);
+      kammGgCtx.strokeStyle = c.friction_clamped ? 'rgba(239, 68, 68, 0.8)' : 'rgba(6, 182, 212, 0.6)';
+      kammGgCtx.lineWidth = c.friction_clamped ? 2.0 : 1.2;
+      kammGgCtx.stroke();
+
+      // Current Acceleration Vector Point (ax, ay)
+      const ax = c.ax_safe || 0;
+      const ay = c.ay_current || 0;
+      const px = cx + (ay / aMax) * maxR;
+      const py = cy - (ax / aMax) * maxR;
+
+      // Vector Line from center to point
+      kammGgCtx.beginPath();
+      kammGgCtx.moveTo(cx, cy);
+      kammGgCtx.lineTo(px, py);
+      kammGgCtx.strokeStyle = c.friction_clamped ? 'rgba(239, 68, 68, 0.8)' : 'rgba(16, 185, 129, 0.8)';
+      kammGgCtx.lineWidth = 1.5;
+      kammGgCtx.stroke();
+
+      // Vector Dot
+      kammGgCtx.beginPath();
+      kammGgCtx.arc(px, py, 4.0, 0, Math.PI * 2);
+      kammGgCtx.fillStyle = c.friction_clamped ? '#ef4444' : '#10b981';
+      kammGgCtx.fill();
+
+      // Labels
+      kammGgCtx.font = '7px monospace';
+      kammGgCtx.fillStyle = '#64748b';
+      kammGgCtx.textAlign = 'right';
+      kammGgCtx.fillText(`ax: ${ax.toFixed(2)}`, w - 4, h - 4);
+      kammGgCtx.textAlign = 'left';
+      kammGgCtx.fillText(`ay: ${ay.toFixed(2)}`, 4, h - 4);
+    }
+
+    // =========================================================================
+    // 4 MULTI-CHANNEL ENGINEERING OSCILLOSCOPES (Bottom Strip)
+    // =========================================================================
+    const chartEyCanvas = document.getElementById('chartEy');
+    const chartEyCtx = chartEyCanvas ? chartEyCanvas.getContext('2d') : null;
+
+    const chartUtilCanvas = document.getElementById('chartUtil');
+    const chartUtilCtx = chartUtilCanvas ? chartUtilCanvas.getContext('2d') : null;
 
     const chartLtrCanvas = document.getElementById('chartLtr');
-    const chartLtrCtx = chartLtrCanvas.getContext('2d');
+    const chartLtrCtx = chartLtrCanvas ? chartLtrCanvas.getContext('2d') : null;
 
     const chartThetaCanvas = document.getElementById('chartTheta');
-    const chartThetaCtx = chartThetaCanvas.getContext('2d');
+    const chartThetaCtx = chartThetaCanvas ? chartThetaCanvas.getContext('2d') : null;
 
+    // Chart 1: Cross-Track Error e_y (cm)
+    function renderEyChart(canvas, ctx, data) {
+      if (!ctx || !canvas) return;
+      const w = canvas.width, h = canvas.height;
+      ctx.clearRect(0, 0, w, h);
+      if (!data || data.length < 2) return;
+
+      const padX = 24, padY = 6;
+      const plotW = w - padX, centerY = h / 2;
+      const yMax = 50.0; // +/- 50 cm
+
+      // Center Zero Line
+      ctx.beginPath();
+      ctx.strokeStyle = 'rgba(255, 255, 255, 0.15)';
+      ctx.moveTo(padX, centerY); ctx.lineTo(w, centerY);
+      ctx.stroke();
+
+      // Tolerance Band (+/- 20 cm in green)
+      const tolH = (20.0 / yMax) * (centerY - padY);
+      ctx.fillStyle = 'rgba(16, 185, 129, 0.08)';
+      ctx.fillRect(padX, centerY - tolH, plotW, tolH * 2);
+
+      ctx.font = '7px monospace';
+      ctx.fillStyle = '#64748b';
+      ctx.textAlign = 'right';
+      ctx.fillText('+50', padX - 3, padY + 6);
+      ctx.fillText('0', padX - 3, centerY + 3);
+      ctx.fillText('-50', padX - 3, h - padY);
+
+      // Data Trace
+      const n = data.length;
+      ctx.beginPath();
+      for (let i = 0; i < n; i++) {
+        const val = data[i].e_y_signed !== undefined ? data[i].e_y_signed : -(data[i].e_y || 0);
+        const clamped = Math.max(-yMax, Math.min(yMax, val));
+        const x = padX + (i / (n - 1)) * plotW;
+        const y = centerY - (clamped / yMax) * (centerY - padY);
+        if (i === 0) ctx.moveTo(x, y);
+        else ctx.lineTo(x, y);
+      }
+      ctx.strokeStyle = '#10b981';
+      ctx.lineWidth = 1.8;
+      ctx.stroke();
+    }
+
+    // Chart 2: Dual Yaw Rate (r vs r_ref)
+    function renderYawRateChart(canvas, ctx, data) {
+      if (!ctx || !canvas) return;
+      const w = canvas.width, h = canvas.height;
+      ctx.clearRect(0, 0, w, h);
+      if (!data || data.length < 2) return;
+
+      const padX = 24, padY = 6;
+      const plotW = w - padX, centerY = h / 2;
+      const rMax = 15.0; // +/- 15 deg/s
+
+      ctx.beginPath();
+      ctx.strokeStyle = 'rgba(255, 255, 255, 0.15)';
+      ctx.moveTo(padX, centerY); ctx.lineTo(w, centerY);
+      ctx.stroke();
+
+      ctx.font = '7px monospace';
+      ctx.fillStyle = '#64748b';
+      ctx.textAlign = 'right';
+      ctx.fillText('+15', padX - 3, padY + 6);
+      ctx.fillText('0', padX - 3, centerY + 3);
+      ctx.fillText('-15', padX - 3, h - padY);
+
+      const n = data.length;
+      // Target Yaw Rate Trace (Green)
+      ctx.beginPath();
+      for (let i = 0; i < n; i++) {
+        const rRef = data[i].r_ref_deg || 0;
+        const clamped = Math.max(-rMax, Math.min(rMax, rRef));
+        const x = padX + (i / (n - 1)) * plotW;
+        const y = centerY - (clamped / rMax) * (centerY - padY);
+        if (i === 0) ctx.moveTo(x, y);
+        else ctx.lineTo(x, y);
+      }
+      ctx.strokeStyle = 'rgba(16, 185, 129, 0.6)';
+      ctx.setLineDash([3, 3]);
+      ctx.lineWidth = 1.2;
+      ctx.stroke();
+      ctx.setLineDash([]);
+
+      // Actual Yaw Rate Trace (Cyan)
+      ctx.beginPath();
+      for (let i = 0; i < n; i++) {
+        const rAct = data[i].r_deg || 0;
+        const clamped = Math.max(-rMax, Math.min(rMax, rAct));
+        const x = padX + (i / (n - 1)) * plotW;
+        const y = centerY - (clamped / rMax) * (centerY - padY);
+        if (i === 0) ctx.moveTo(x, y);
+        else ctx.lineTo(x, y);
+      }
+      ctx.strokeStyle = '#06b6d4';
+      ctx.lineWidth = 1.8;
+      ctx.stroke();
+    }
+
+    // Chart 3: Steering Angle delta
+    function renderSteerChart(canvas, ctx, data) {
+      if (!ctx || !canvas) return;
+      const w = canvas.width, h = canvas.height;
+      ctx.clearRect(0, 0, w, h);
+      if (!data || data.length < 2) return;
+
+      const padX = 24, padY = 6;
+      const plotW = w - padX, centerY = h / 2;
+      const sMax = 10.0; // +/- 10 deg
+
+      ctx.beginPath();
+      ctx.strokeStyle = 'rgba(255, 255, 255, 0.15)';
+      ctx.moveTo(padX, centerY); ctx.lineTo(w, centerY);
+      ctx.stroke();
+
+      ctx.font = '7px monospace';
+      ctx.fillStyle = '#64748b';
+      ctx.textAlign = 'right';
+      ctx.fillText('+10°', padX - 3, padY + 6);
+      ctx.fillText('0°', padX - 3, centerY + 3);
+      ctx.fillText('-10°', padX - 3, h - padY);
+
+      const n = data.length;
+      ctx.beginPath();
+      for (let i = 0; i < n; i++) {
+        const val = data[i].steer_deg || 0;
+        const clamped = Math.max(-sMax, Math.min(sMax, val));
+        const x = padX + (i / (n - 1)) * plotW;
+        const y = centerY - (clamped / sMax) * (centerY - padY);
+        if (i === 0) ctx.moveTo(x, y);
+        else ctx.lineTo(x, y);
+      }
+      ctx.strokeStyle = '#f59e0b';
+      ctx.lineWidth = 1.8;
+      ctx.stroke();
+    }
+
+    // Chart 4: Rollover LTR & Articulation theta_a
+    function renderStabilityChart(canvas, ctx, data) {
+      if (!ctx || !canvas) return;
+      const w = canvas.width, h = canvas.height;
+      ctx.clearRect(0, 0, w, h);
+      if (!data || data.length < 2) return;
+
+      const padX = 24, padY = 6;
+      const plotW = w - padX;
+
+      // 0.6 Warning Line
+      const warnY = h - padY - 0.6 * (h - padY * 2);
+      ctx.beginPath();
+      ctx.strokeStyle = 'rgba(245, 158, 11, 0.4)';
+      ctx.setLineDash([3, 3]);
+      ctx.moveTo(padX, warnY); ctx.lineTo(w, warnY);
+      ctx.stroke();
+      ctx.setLineDash([]);
+
+      ctx.font = '7px monospace';
+      ctx.fillStyle = '#64748b';
+      ctx.textAlign = 'right';
+      ctx.fillText('1.0', padX - 3, padY + 6);
+      ctx.fillText('0.6', padX - 3, warnY + 3);
+      ctx.fillText('0.0', padX - 3, h - padY);
+
+      const n = data.length;
+      ctx.beginPath();
+      for (let i = 0; i < n; i++) {
+        const ltr = Math.min(1.0, Math.max(0, data[i].ltr || 0));
+        const x = padX + (i / (n - 1)) * plotW;
+        const y = h - padY - ltr * (h - padY * 2);
+        if (i === 0) ctx.moveTo(x, y);
+        else ctx.lineTo(x, y);
+      }
+      ctx.strokeStyle = '#ef4444';
+      ctx.lineWidth = 1.8;
+      ctx.stroke();
+    }
+
+    // =========================================================================
+    // HIGH-FPS COMBINED ANIMATION & RENDER LOOP (60 FPS)
+    // =========================================================================
+    let smoothX = 0, smoothY = 0, smoothPsi1 = 0, smoothPsi2 = 0;
+    let smoothInit = false;
+    let lastAnimTime = performance.now();
+
+    function render(animNow) {
+      requestAnimationFrame(render);
+      if (!latestData || !latestData.current) return;
+
+      const c = latestData.current;
+      const trail = latestData.trail || [];
+      const charts = latestData.charts || [];
+
+      if (!animNow) animNow = performance.now();
+      const dtAnim = Math.min(0.06, (animNow - lastAnimTime) / 1000);
+      lastAnimTime = animNow;
+
+      if (!smoothInit) {
+        smoothX = c.x; smoothY = c.y;
+        smoothPsi1 = c.psi1; smoothPsi2 = c.psi2;
+        smoothInit = true;
+      } else {
+        const alpha = Math.min(1.0, dtAnim * 18.0);
+        smoothX += (c.x - smoothX) * alpha;
+        smoothY += (c.y - smoothY) * alpha;
+
+        let dPsi1 = c.psi1 - smoothPsi1;
+        while (dPsi1 > Math.PI) dPsi1 -= 2 * Math.PI;
+        while (dPsi1 < -Math.PI) dPsi1 += 2 * Math.PI;
+        smoothPsi1 += dPsi1 * alpha;
+
+        let dPsi2 = c.psi2 - smoothPsi2;
+        while (dPsi2 > Math.PI) dPsi2 -= 2 * Math.PI;
+        while (dPsi2 < -Math.PI) dPsi2 += 2 * Math.PI;
+        smoothPsi2 += dPsi2 * alpha;
+      }
+
+      // 1. Render 2D Tactical Overhead Radar Canvas
+      render2D(c, trail);
+
+      // 2. Render 3D Virtual World
+      render3D(dtAnim, c, trail);
+
+      // 3. Render Cockpit Gauges
+      const curKmh = c.speed_kmh || (c.vx * 3.6);
+      const tgtKmh = c.target_speed_kmh || curKmh;
+      renderSpeedometerGauge(curKmh, tgtKmh, c.power_kw || 0, c.ax_safe || 0);
+      renderSteeringWheelGauge(c.steer_deg || 0, c.steer_handwheel_deg || 0, c.delta_max_deg || 10.0);
+      renderKammGgRadar(c);
+
+      // 4. Render 4 Engineering Oscilloscopes
+      renderEyChart(chartEyCanvas, chartEyCtx, charts);
+      renderYawRateChart(chartUtilCanvas, chartUtilCtx, charts);
+      renderSteerChart(chartLtrCanvas, chartLtrCtx, charts);
+      renderStabilityChart(chartThetaCanvas, chartThetaCtx, charts);
+    }
+
+    // --- 2D Overhead Radar Renderer ---
+    function render2D(c, trail) {
+      if (!trackCtx || !trackCanvas) return;
+      const w = trackCanvas.width, h = trackCanvas.height;
+      trackCtx.clearRect(0, 0, w, h);
+
+      const scale = currentScale;
+      trackCtx.save();
+      trackCtx.translate(w / 2 + panOffsetX, h / 2 + panOffsetY);
+      trackCtx.scale(scale, -scale);
+      if (isFollowCam) {
+        trackCtx.rotate(-smoothPsi1);
+      }
+      trackCtx.translate(-smoothX, -smoothY);
+
+      const dims = latestData.dimensions || {};
+      const lf = dims.lf || 1.4, lr = dims.lr || 2.4, d1 = dims.d1 || 0.3;
+      const hitchOffset = lr + d1;
+      const hitchX = smoothX - hitchOffset * Math.cos(smoothPsi1);
+      const hitchY = smoothY - hitchOffset * Math.sin(smoothPsi1);
+      const isPassengerCar = Boolean(dims.is_passenger_car || (latestData && latestData.backend === 'matlab'));
+
+      // Draw Highway Road Surface (Procedurally around vehicle)
+      const laneW = (latestData && latestData.road) ? latestData.road.lane_width : 3.6;
+      const halfLane = laneW * 0.5;
+      const lane2Left = laneW * 1.5;
+      const startX = smoothX - 85.0;
+      const endX = smoothX + 130.0;
+      const stepX = 2.5;
+      const numPts = Math.floor((endX - startX) / stepX) + 1;
+
+      // 1. Asphalt Road Surface
+      trackCtx.beginPath();
+      for (let i = 0; i < numPts; i++) {
+        const xVal = startX + i * stepX;
+        const yVal = getRoadY(xVal);
+        const dy = getRoadDy(xVal);
+        const L = Math.hypot(1, dy) || 1.0;
+        const nx = -dy / L, ny = 1.0 / L;
+        const xL = xVal + lane2Left * nx, yL = yVal + lane2Left * ny;
+        if (i === 0) trackCtx.moveTo(xL, yL);
+        else trackCtx.lineTo(xL, yL);
+      }
+      for (let i = numPts - 1; i >= 0; i--) {
+        const xVal = startX + i * stepX;
+        const yVal = getRoadY(xVal);
+        const dy = getRoadDy(xVal);
+        const L = Math.hypot(1, dy) || 1.0;
+        const nx = -dy / L, ny = 1.0 / L;
+        const xR = xVal - halfLane * nx, yR = yVal - halfLane * ny;
+        trackCtx.lineTo(xR, yR);
+      }
+      trackCtx.closePath();
+      trackCtx.fillStyle = '#0f172a';
+      trackCtx.fill();
+
+      // Outer White Edge Lines
+      trackCtx.beginPath();
+      for (let i = 0; i < numPts; i++) {
+        const xVal = startX + i * stepX;
+        const yVal = getRoadY(xVal);
+        const dy = getRoadDy(xVal);
+        const L = Math.hypot(1, dy) || 1.0;
+        const nx = -dy / L, ny = 1.0 / L;
+        const xL = xVal + lane2Left * nx, yL = yVal + lane2Left * ny;
+        if (i === 0) trackCtx.moveTo(xL, yL);
+        else trackCtx.lineTo(xL, yL);
+      }
+      trackCtx.strokeStyle = 'rgba(255, 255, 255, 0.75)';
+      trackCtx.lineWidth = 0.20;
+      trackCtx.stroke();
+
+      // Dashed Center Divider Line
+      trackCtx.beginPath();
+      trackCtx.setLineDash([2.5, 2.5]);
+      for (let i = 0; i < numPts; i++) {
+        const xVal = startX + i * stepX;
+        const yVal = getRoadY(xVal);
+        const dy = getRoadDy(xVal);
+        const L = Math.hypot(1, dy) || 1.0;
+        const nx = -dy / L, ny = 1.0 / L;
+        const cx = xVal + halfLane * nx, cy = yVal + halfLane * ny;
+        if (i === 0) trackCtx.moveTo(cx, cy);
+        else trackCtx.lineTo(cx, cy);
+      }
+      trackCtx.strokeStyle = 'rgba(245, 158, 11, 0.85)';
+      trackCtx.lineWidth = 0.18;
+      trackCtx.stroke();
+      trackCtx.setLineDash([]);
+
+      // 2. Green Target Path Spline (Centerline of Lane 1)
+      trackCtx.beginPath();
+      trackCtx.setLineDash([1.8, 1.8]);
+      for (let i = 0; i < numPts; i++) {
+        const xVal = startX + i * stepX;
+        const yVal = getRoadY(xVal);
+        if (i === 0) trackCtx.moveTo(xVal, yVal);
+        else trackCtx.lineTo(xVal, yVal);
+      }
+      trackCtx.strokeStyle = '#10b981';
+      trackCtx.lineWidth = 0.38;
+      trackCtx.stroke();
+      trackCtx.setLineDash([]);
+
+      // Draw Vehicle History Trail (Cyan Traced Path)
+      if (trail && trail.length > 1) {
+        trackCtx.beginPath();
+        for (let i = 0; i < trail.length; i++) {
+          if (i === 0) trackCtx.moveTo(trail[i].x, trail[i].y);
+          else trackCtx.lineTo(trail[i].x, trail[i].y);
+        }
+        trackCtx.strokeStyle = '#06b6d4';
+        trackCtx.lineWidth = 0.45;
+        trackCtx.stroke();
+      }
+
+      // Draw Active Evasion Corridor Ribbon
+      if (c.obstacle_ahead && c.evading) {
+        const ox = c.x + (c.obstacle_dist_m || 30.0);
+        trackCtx.beginPath();
+        trackCtx.setLineDash([1.5, 1.5]);
+        const evOffset = c.evade_offset_m || 3.6;
+        for (let xStep = c.x; xStep <= ox + 60; xStep += 3) {
+          const yBase = getRoadY(xStep);
+          if (xStep === c.x) trackCtx.moveTo(xStep, yBase + evOffset);
+          else trackCtx.lineTo(xStep, yBase + evOffset);
+        }
+        trackCtx.strokeStyle = '#fbbf24';
+        trackCtx.lineWidth = 0.30;
+        trackCtx.stroke();
+        trackCtx.setLineDash([]);
+      }
+
+      // Draw Vehicle Glyphs
+      const L_tractor = isPassengerCar ? 4.7 : 4.6;
+      const W_tractor = isPassengerCar ? 1.85 : 2.45;
+
+      // 1. Semitrailer Body
+      if (!isPassengerCar) {
+        const L_trailer = 13.5, W_trailer = 2.55;
+        trackCtx.save();
+        trackCtx.translate(hitchX, hitchY);
+        trackCtx.rotate(smoothPsi2);
+
+        trackCtx.fillStyle = '#1e293b';
+        trackCtx.strokeStyle = '#475569';
+        trackCtx.lineWidth = 0.15;
+        trackCtx.fillRect(-L_trailer, -W_trailer / 2, L_trailer, W_trailer);
+        trackCtx.strokeRect(-L_trailer, -W_trailer / 2, L_trailer, W_trailer);
+
+        // Trailer Kingpin Hitch
+        trackCtx.beginPath();
+        trackCtx.arc(0, 0, 0.28, 0, Math.PI * 2);
+        trackCtx.fillStyle = '#f59e0b';
+        trackCtx.fill();
+
+        trackCtx.restore();
+      }
+
+      // 2. Tractor Body
+      trackCtx.save();
+      trackCtx.translate(smoothX, smoothY);
+      trackCtx.rotate(smoothPsi1);
+
+      // Faint soft headlight glow (no harsh opaque yellow triangle)
+      const gradHl = trackCtx.createRadialGradient(L_tractor / 2, 0, 1.0, L_tractor / 2 + 16, 0, 16);
+      gradHl.addColorStop(0, 'rgba(254, 240, 138, 0.16)');
+      gradHl.addColorStop(1, 'rgba(254, 240, 138, 0)');
+      trackCtx.fillStyle = gradHl;
+      trackCtx.beginPath();
+      trackCtx.moveTo(L_tractor / 2, -W_tractor / 2);
+      trackCtx.lineTo(L_tractor / 2 + 18, -W_tractor * 2.2);
+      trackCtx.lineTo(L_tractor / 2 + 18, W_tractor * 2.2);
+      trackCtx.lineTo(L_tractor / 2, W_tractor / 2);
+      trackCtx.closePath();
+      trackCtx.fill();
+
+      // Main Cab
+      trackCtx.fillStyle = isPassengerCar ? '#0369a1' : '#1e3a5f';
+      trackCtx.strokeStyle = isPassengerCar ? '#38bdf8' : '#94a3b8';
+      trackCtx.lineWidth = 0.16;
+      trackCtx.fillRect(-L_tractor / 2, -W_tractor / 2, L_tractor, W_tractor);
+      trackCtx.strokeRect(-L_tractor / 2, -W_tractor / 2, L_tractor, W_tractor);
+
+      // Front Wheels with Steer Angle delta
+      const steerRad = c.steer_safe || 0;
+      [-1, 1].forEach(side => {
+        trackCtx.save();
+        trackCtx.translate(L_tractor * 0.38, side * (W_tractor / 2));
+        trackCtx.rotate(steerRad);
+        trackCtx.fillStyle = '#0f172a';
+        trackCtx.fillRect(-0.45, -0.15, 0.9, 0.3);
+        trackCtx.restore();
+      });
+
+      trackCtx.restore();
+      trackCtx.restore();
+    }
+
+    // --- 3D World Renderer ---
+    function render3D(dtAnim, c, trail) {
+      if (!threeInitialized || !threeScene || !threeCamera || !threeRenderer) return;
+
+      const dims = latestData.dimensions || {};
+      const lr = dims.lr || 2.4, d1 = dims.d1 || 0.3;
+      const hitchOffset = lr + d1;
+      const hitchX = smoothX - hitchOffset * Math.cos(smoothPsi1);
+      const hitchY = smoothY - hitchOffset * Math.sin(smoothPsi1);
+      const isPassengerCar3D = Boolean(dims.is_passenger_car || (latestData && latestData.backend === 'matlab'));
+
+      // 1. Vehicle Pose Updates
+      if (tractorGroup) {
+        tractorGroup.position.set(smoothX, 0, -smoothY);
+        tractorGroup.rotation.y = smoothPsi1;
+        if (steerWheelLeft && steerWheelRight) {
+          steerWheelLeft.rotation.y = c.steer_safe || 0;
+          steerWheelRight.rotation.y = c.steer_safe || 0;
+        }
+      }
+      if (trailerGroup) {
+        trailerGroup.visible = !isPassengerCar3D;
+        trailerGroup.position.set(hitchX, 0, -hitchY);
+        trailerGroup.rotation.y = smoothPsi2;
+      }
+
+      // 2. Wheel Rolling Animation
+      const curVx = (c && c.vx) ? c.vx : 0;
+      const rotDelta = (curVx / 0.52) * dtAnim;
+      wheelRollAngleTractor -= rotDelta;
+      rollingWheelsTractor.forEach(w => w.rotation.z = wheelRollAngleTractor);
+      rollingWheelsTrailer.forEach(w => w.rotation.z = wheelRollAngleTractor);
+
+      // 3. Procedural 3D Road Mesh around vehicle
+      const laneW = (latestData && latestData.road) ? latestData.road.lane_width : 3.6;
+      const halfLane = laneW * 0.5;
+      const lane2Left = laneW * 1.5;
+      const startX = smoothX - 70.0;
+      const roadDx = ROAD_DX;
+
+      if (roadGeom) {
+        const rPos = roadGeom.attributes.position;
+        const sPosL = shoulderGeomL.attributes.position;
+        const sPosR = shoulderGeomR.attributes.position;
+        const gPosL = guardrailGeomL.attributes.position;
+        const gPosR = guardrailGeomR.attributes.position;
+        const ePosL = edgeGeomL.attributes.position;
+        const ePosR = edgeGeomR.attributes.position;
+        const pPos = pathRibbonGeom.attributes.position;
+
+        for (let i = 0; i < ROAD_SEGS; i++) {
+          const x = startX + i * roadDx;
+          const y = getRoadY(x);
+          const dy = getRoadDy(x);
+          const L = Math.hypot(1, dy) || 1.0;
+          const nx = dy / L, nz = 1 / L;
+
+          const idxL = i * 2;
+          const idxR = i * 2 + 1;
+
+          // Asphalt Road Surface
+          rPos.setXYZ(idxL, x - lane2Left * nx, 0.0, -y - lane2Left * nz);
+          rPos.setXYZ(idxR, x + halfLane * nx, 0.0, -y + halfLane * nz);
+
+          // Shoulders
+          sPosL.setXYZ(idxL, x - (lane2Left + 2.5) * nx, -0.05, -y - (lane2Left + 2.5) * nz);
+          sPosL.setXYZ(idxR, x - lane2Left * nx, 0.0, -y - lane2Left * nz);
+
+          sPosR.setXYZ(idxL, x + halfLane * nx, 0.0, -y + halfLane * nz);
+          sPosR.setXYZ(idxR, x + (halfLane + 2.5) * nx, -0.05, -y + (halfLane + 2.5) * nz);
+
+          // Steel Guardrails
+          gPosL.setXYZ(idxL, x - (lane2Left + 2.6) * nx, 0.45, -y - (lane2Left + 2.6) * nz);
+          gPosL.setXYZ(idxR, x - (lane2Left + 2.6) * nx, 0.78, -y - (lane2Left + 2.6) * nz);
+
+          gPosR.setXYZ(idxL, x + (halfLane + 2.6) * nx, 0.45, -y + (halfLane + 2.6) * nz);
+          gPosR.setXYZ(idxR, x + (halfLane + 2.6) * nx, 0.78, -y + (halfLane + 2.6) * nz);
+
+          // White Edge Lines
+          ePosL.setXYZ(idxL, x - (lane2Left + 0.1) * nx, 0.015, -y - (lane2Left + 0.1) * nz);
+          ePosL.setXYZ(idxR, x - (lane2Left - 0.1) * nx, 0.015, -y - (lane2Left - 0.1) * nz);
+
+          ePosR.setXYZ(idxL, x + (halfLane - 0.1) * nx, 0.015, -y + (halfLane - 0.1) * nz);
+          ePosR.setXYZ(idxR, x + (halfLane + 0.1) * nx, 0.015, -y + (halfLane + 0.1) * nz);
+
+          // Target Spline (Green)
+          pPos.setXYZ(idxL, x - 0.18 * nx, 0.02, -y - 0.18 * nz);
+          pPos.setXYZ(idxR, x + 0.18 * nx, 0.02, -y + 0.18 * nz);
+        }
+        rPos.needsUpdate = true;
+        sPosL.needsUpdate = true; sPosR.needsUpdate = true;
+        gPosL.needsUpdate = true; gPosR.needsUpdate = true;
+        ePosL.needsUpdate = true; ePosR.needsUpdate = true;
+        pPos.needsUpdate = true;
+      }
+
+      // Dashed yellow center lines
+      if (centerDashedGroup) {
+        const DASH_SPACING = 6.0;
+        const baseIdx = Math.floor(startX / DASH_SPACING);
+        for (let j = 0; j < centerDashedGroup.children.length; j++) {
+          const dxVal = (baseIdx + j) * DASH_SPACING;
+          const dyVal = getRoadY(dxVal);
+          const dySlope = getRoadDy(dxVal);
+          const ang = Math.atan2(dySlope, 1);
+          const L = Math.hypot(1, dySlope) || 1.0;
+          const nx = dySlope / L, nz = 1 / L;
+          const dMesh = centerDashedGroup.children[j];
+          dMesh.position.set(dxVal - halfLane * nx, 0.018, -dyVal - halfLane * nz);
+          dMesh.rotation.y = ang;
+        }
+      }
+
+      // 4. Trajectory History Trail
+      if (trail && trail.length > 1 && trail3DGeom) {
+        const TRAIL_MAX = 100;
+        const tPos = trail3DGeom.attributes.position;
+        const nTrail = Math.min(TRAIL_MAX, trail.length);
+        const startIdx = trail.length - nTrail;
+
+        for (let ti = 0; ti < TRAIL_MAX; ti++) {
+          if (ti < nTrail) {
+            const pt = trail[startIdx + ti];
+            const pNext = (ti < nTrail - 1) ? trail[startIdx + ti + 1] : pt;
+            const tdx = pNext.x - pt.x; const tdy = pNext.y - pt.y;
+            const tL = Math.hypot(tdx, tdy) || 1.0;
+            const tnx = -tdy / tL; const tnz = tdx / tL;
+            tPos.setXYZ(ti * 2, pt.x + 0.28 * tnx, 0.03, -pt.y + 0.28 * tnz);
+            tPos.setXYZ(ti * 2 + 1, pt.x - 0.28 * tnx, 0.03, -pt.y - 0.28 * tnz);
+          } else {
+            tPos.setXYZ(ti * 2, smoothX, 0.03, -smoothY);
+            tPos.setXYZ(ti * 2 + 1, smoothX, 0.03, -smoothY);
+          }
+        }
+        tPos.needsUpdate = true;
+      }
+
+      // 5. Ground Terrain & Sky Following
+      if (terrainMesh) terrainMesh.position.set(smoothX, 0, -smoothY);
+      if (skyMesh) skyMesh.position.set(smoothX, 0, -smoothY);
+      if (threeSunLight) {
+        threeSunLight.position.set(smoothX + 60, 90, -smoothY + 50);
+        threeSunLight.target.position.set(smoothX, 0, -smoothY);
+      }
+
+      // 6. Camera Modes & Dynamic Following
+      let targetCamPos = new THREE.Vector3();
+      let targetLookAt = new THREE.Vector3();
+
+      if (threeCameraMode === 'cockpit') {
+        // Driver Eye Cockpit View (First-person POV looking out over the hood)
+        const eyeX = smoothX + 0.7 * Math.cos(smoothPsi1) - 0.45 * Math.sin(smoothPsi1);
+        const eyeZ = -(smoothY + 0.7 * Math.sin(smoothPsi1) + 0.45 * Math.cos(smoothPsi1));
+        const eyeY = 2.45;
+        const lookAhead = 40.0;
+        const lookX = eyeX + lookAhead * Math.cos(smoothPsi1);
+        const lookZ = -(smoothY + lookAhead * Math.sin(smoothPsi1) + 0.45 * Math.cos(smoothPsi1));
+        targetCamPos.set(eyeX, eyeY, eyeZ);
+        targetLookAt.set(lookX, 2.15, lookZ);
+      } else if (threeCameraMode === 'orbit') {
+        // 360° Drone Orbit View
+        const ctrX = smoothX - 4.0 * Math.cos(smoothPsi1);
+        const ctrZ = -(smoothY - 4.0 * Math.sin(smoothPsi1));
+        const ctrY = 2.0;
+        const camX = ctrX + orbitRadius * Math.cos(orbitElevation) * Math.cos(orbitAzimuth);
+        const camY = ctrY + orbitRadius * Math.sin(orbitElevation);
+        const camZ = ctrZ + orbitRadius * Math.cos(orbitElevation) * Math.sin(orbitAzimuth);
+        targetCamPos.set(camX, Math.max(0.6, camY), camZ);
+        targetLookAt.set(ctrX, ctrY, ctrZ);
+      } else {
+        // 3D Virtual Chase View (Elevated & Offset so entire vehicle & forward road are visible!)
+        const camDistBack = 18.5;
+        const camDistHitch = 4.5;
+        const camX = hitchX - camDistBack * Math.cos(smoothPsi2) - camDistHitch * Math.cos(smoothPsi1) - 2.4 * Math.sin(smoothPsi1);
+        const camZ = -(hitchY - camDistBack * Math.sin(smoothPsi2) - camDistHitch * Math.sin(smoothPsi1) + 2.4 * Math.cos(smoothPsi1));
+        const camY = 4.6;
+
+        const lookAhead = 25.0;
+        const lookX = smoothX + lookAhead * Math.cos(smoothPsi1);
+        const lookZ = -(smoothY + lookAhead * Math.sin(smoothPsi1));
+        const lookY = 1.6;
+
+        targetCamPos.set(camX, camY, camZ);
+        targetLookAt.set(lookX, lookY, lookZ);
+      }
+
+      if (!camSmoothPos || threeCameraMode === 'cockpit') {
+        camSmoothPos = targetCamPos.clone();
+        camSmoothLookAt = targetLookAt.clone();
+      } else {
+        const camLerp = Math.min(1.0, dtAnim * 12.0);
+        camSmoothPos.lerp(targetCamPos, camLerp);
+        camSmoothLookAt.lerp(targetLookAt, camLerp);
+      }
+
+      threeCamera.position.copy(camSmoothPos);
+      threeCamera.lookAt(camSmoothLookAt);
+
+      threeRenderer.render(threeScene, threeCamera);
+    }
+
+    // =========================================================================
+    // CANVAS RESIZE & HIGH-DPI SCALING ENGINE
+    // =========================================================================
     function resizeCanvases() {
-      trackCanvas.width = trackCanvas.clientWidth * window.devicePixelRatio;
-      trackCanvas.height = trackCanvas.clientHeight * window.devicePixelRatio;
-      chartLtrCanvas.width = chartLtrCanvas.clientWidth * window.devicePixelRatio;
-      chartLtrCanvas.height = chartLtrCanvas.clientHeight * window.devicePixelRatio;
-      chartThetaCanvas.width = chartThetaCanvas.clientWidth * window.devicePixelRatio;
-      chartThetaCanvas.height = chartThetaCanvas.clientHeight * window.devicePixelRatio;
+      const dpr = window.devicePixelRatio || 1;
+      
+      const canvases = [
+        trackCanvas, speedoCanvas, steerWheelCanvas, kammGgCanvas,
+        chartEyCanvas, chartUtilCanvas, chartLtrCanvas, chartThetaCanvas
+      ];
+
+      canvases.forEach(c => {
+        if (c && c.clientWidth > 0 && c.clientHeight > 0) {
+          c.width = c.clientWidth * dpr;
+          c.height = c.clientHeight * dpr;
+          const ctx = c.getContext('2d');
+          if (ctx) ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+        }
+      });
+
+      if (threeRenderer && threeCamera) {
+        const wrap = document.getElementById('threeWrapper');
+        if (wrap && wrap.clientWidth > 0 && wrap.clientHeight > 0) {
+          threeRenderer.setSize(wrap.clientWidth, wrap.clientHeight);
+          threeCamera.aspect = wrap.clientWidth / wrap.clientHeight;
+          threeCamera.updateProjectionMatrix();
+        }
+      }
     }
     window.addEventListener('resize', resizeCanvases);
-    resizeCanvases();
 
-    // Data Storage
+    // =========================================================================
+    // TELEMETRY POLLING & UI UPDATE (25 Hz)
+    // =========================================================================
     let latestData = null;
-    let loggedIncidentKeys = new Set();
+    let isPolling = false;
 
-    // Formatter
     function formatUptime(sec) {
+      if (!sec) return '00:00:00';
       const h = Math.floor(sec / 3600).toString().padStart(2, '0');
       const m = Math.floor((sec % 3600) / 60).toString().padStart(2, '0');
       const s = Math.floor(sec % 60).toString().padStart(2, '0');
       return `${h}:${m}:${s}`;
     }
 
-    // Live Event Injection
-    async function injectEvent(eventType) {
-      try {
-        await fetch('/api/inject', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ event: eventType })
-        });
-      } catch (err) {
-        console.error("Injection failed", err);
-      }
-    }
-
-    // --- Fast 25 Hz Polling Engine ---
     async function pollTelemetry() {
+      if (isPolling) return;
+      isPolling = true;
       try {
         const resp = await fetch('/api/telemetry');
         if (resp.ok) {
           latestData = await resp.json();
           updateUI(latestData);
+          ensureThreeInitialized();
         }
       } catch (err) {
-        // Network retry
+      } finally {
+        isPolling = false;
+        setTimeout(pollTelemetry, 35);
       }
-      setTimeout(pollTelemetry, 40); // 25 Hz
     }
     pollTelemetry();
 
@@ -331,270 +2900,240 @@
       const c = data.current;
 
       document.getElementById('lblUptime').textContent = formatUptime(data.uptime_seconds);
-      document.getElementById('lblTicks').textContent = data.ticks_total.toLocaleString();
-      document.getElementById('lblInterventions').textContent = data.interventions_total.toLocaleString();
-      document.getElementById('lblCoords').textContent = `X: ${c.x.toFixed(1)}m | Y: ${c.y.toFixed(1)}m | e_y: ${c.lateral_error_cm}cm`;
-      document.getElementById('lblSpeed').textContent = `${(c.vx * 3.6).toFixed(1)} km/h`;
+      document.getElementById('lblTicks').textContent = (data.ticks_total || 0).toLocaleString();
+      document.getElementById('lblInterventions').textContent = (data.interventions_total || 0).toLocaleString();
+      document.getElementById('lblCoords').textContent = `X: ${c.x.toFixed(1)} m | Y: ${c.y.toFixed(1)} m | e_y: ${c.lateral_error_cm} cm`;
 
-      // Weather Pill
-      const wPill = document.getElementById('weatherPill');
-      wPill.className = `weather-pill weather-${c.weather}`;
-      wPill.textContent = `${c.weather.toUpperCase()} (μ=${c.mu.toFixed(2)})`;
+      // 1. Speedometer Readouts
+      const curSpeed = c.speed_kmh || (c.vx * 3.6);
+      document.getElementById('lblSpeedDigit').textContent = `${curSpeed.toFixed(1)} KM/H`;
+      document.getElementById('lblEnginePower').textContent = `${(c.power_kw || 0).toFixed(1)} kW`;
+      document.getElementById('lblAccelLong').textContent = `${(c.ax_safe || 0).toFixed(2)} m/s²`;
 
-      // Mode Pill
+      // 2. Steering Readouts
+      const steerDeg = c.steer_deg || 0;
+      const handwheelDeg = c.steer_handwheel_deg || (steerDeg * 16.0);
+      document.getElementById('lblSteerDigit').textContent = `δ = ${steerDeg > 0 ? '+' : ''}${steerDeg.toFixed(1)}°`;
+      document.getElementById('lblSteerHandwheel').textContent = `${handwheelDeg > 0 ? '+' : ''}${handwheelDeg.toFixed(1)}°`;
+      document.getElementById('lblSteerRate').textContent = `${(Math.abs(steerDeg) * 1.5).toFixed(1)}°/s`;
+
+      // 3. Kamm Circle Readouts
+      const utilPct = Math.min(100, Math.round((c.friction_utilisation || 0) * 100));
+      document.getElementById('lblUtilDigit').textContent = `${utilPct}%`;
+      document.getElementById('lblGTotal').textContent = `${(c.g_total || (Math.hypot(c.ax_safe || 0, c.ay_current || 0) / 9.81)).toFixed(2)} G`;
+      document.getElementById('lblMuG').textContent = `${((c.mu || 0.85)).toFixed(2)} G`;
+
+      // 4. Chassis Axle Dynamics & Tire Forces
+      const fzfKn = (c.Fzf ? c.Fzf / 1000 : 35.0).toFixed(1);
+      const fzrKn = (c.Fzr ? c.Fzr / 1000 : 65.0).toFixed(1);
+      const fztKn = (c.Fzt ? c.Fzt / 1000 : 120.0).toFixed(1);
+      document.getElementById('lblFzf').textContent = `${fzfKn} kN`;
+      document.getElementById('lblFzr').textContent = `${fzrKn} kN`;
+      document.getElementById('lblFzt').textContent = `${fztKn} kN`;
+      document.getElementById('lblFztDetail').textContent = `${fztKn} kN`;
+
+      document.getElementById('lblAlphaF').textContent = `${(c.alpha_f_deg || 0).toFixed(1)}°`;
+      document.getElementById('lblAlphaR').textContent = `${(c.alpha_r_deg || 0).toFixed(1)}°`;
+      document.getElementById('lblFyf').textContent = `${(c.Fyf ? c.Fyf / 1000 : 0).toFixed(1)} kN`;
+      document.getElementById('lblFyr').textContent = `${(c.Fyr ? c.Fyr / 1000 : 0).toFixed(1)} kN`;
+
+      const betaDeg = c.beta_deg || 0;
+      document.getElementById('lblSideslip').textContent = `β = ${betaDeg > 0 ? '+' : ''}${betaDeg.toFixed(2)}°`;
+      const handlingBalance = Math.abs(betaDeg) < 1.0 ? 'NEUTRAL' : (betaDeg > 0 ? 'MILD UNDERSTEER' : 'OVERSTEER');
+      const hBalElem = document.getElementById('lblHandlingBalance');
+      hBalElem.textContent = handlingBalance;
+      hBalElem.style.color = handlingBalance === 'NEUTRAL' ? '#34d399' : (handlingBalance === 'OVERSTEER' ? '#f87171' : '#fbbf24');
+
+      // 5. Safety Supervisor State
+      document.getElementById('lblModeStatus').textContent = c.mode || 'NOMINAL';
       const mPill = document.getElementById('modePill');
       mPill.className = `mode-pill mode-${c.mode}`;
       mPill.textContent = `${c.mode} SUPERVISOR MODE`;
 
-      // Utilization Bar
-      const utilPct = Math.min(100, Math.round(c.friction_utilisation * 100));
-      document.getElementById('lblUtil').textContent = `${utilPct}%`;
-      document.getElementById('barUtil').style.width = `${utilPct}%`;
+      const eyCm = c.lateral_error_cm || 0;
+      document.getElementById('lblEyMeter').textContent = `${eyCm.toFixed(1)} cm`;
+      document.getElementById('barEy').style.width = `${Math.min(100, Math.round((Math.abs(eyCm) / 50.0) * 100))}%`;
+      document.getElementById('lblCurrentEy').textContent = `${eyCm.toFixed(1)} cm`;
 
-      // LTR Bar
-      const ltrVal = c.ltr;
+      const ltrVal = c.ltr || 0;
       document.getElementById('lblLtr').textContent = ltrVal.toFixed(3);
       document.getElementById('barLtr').style.width = `${Math.min(100, Math.round(ltrVal * 100))}%`;
-      document.getElementById('lblCurrentLtr').textContent = ltrVal.toFixed(3);
+      document.getElementById('lblCurrentLtrChart').textContent = ltrVal.toFixed(3);
 
-      // Hitch Bar
-      const hitchDeg = Math.abs(c.theta_a_deg);
-      const critDeg = c.theta_crit_deg;
+      const hitchDeg = Math.abs(c.theta_a_deg || 0);
+      const critDeg = c.theta_crit_deg || 72.0;
       document.getElementById('lblHitch').textContent = `${hitchDeg.toFixed(1)}° / ${critDeg.toFixed(1)}°`;
-      document.getElementById('barHitch').style.width = `${Math.min(100, Math.round((hitchDeg / critDeg) * 100))}%`;
-      document.getElementById('lblCurrentTheta').textContent = `${hitchDeg.toFixed(1)}°`;
+      const hitchPct = Math.min(100, Math.round((hitchDeg / critDeg) * 100));
+      document.getElementById('barHitch').style.width = `${hitchPct}%`;
 
-      // Tension and Clamping
-      document.getElementById('lblTrailerBrake').textContent = `${(c.trailer_brake_pressure * 6.5).toFixed(2)} bar`;
-      document.getElementById('lblSteerClamp').textContent = c.friction_clamped ? 'ACTIVE CLAMP' : 'Nominal';
-      document.getElementById('lblSteerClamp').style.color = c.friction_clamped ? 'var(--warning)' : 'var(--text-muted)';
+      const airBar = c.trailer_pressure_bar !== undefined ? c.trailer_pressure_bar : (c.trailer_brake_pressure * 6.5);
+      document.getElementById('lblTrailerBrake').textContent = `${(airBar || 0).toFixed(2)} bar`;
 
-      // Append Terminal Incidents
-      if (data.incidents && data.incidents.length) {
-        const term = document.getElementById('terminalConsole');
-        data.incidents.forEach(inc => {
-          const key = `${inc.tick}_${inc.trigger}`;
-          if (!loggedIncidentKeys.has(key)) {
-            loggedIncidentKeys.add(key);
-            const row = document.createElement('div');
-            row.className = 'terminal-entry';
-            const tagClass = inc.trailer_brake > 0 ? 'tag-guard' : 'tag-clamp';
-            row.innerHTML = `<span class="ts">[t=${inc.t.toFixed(2)}s]</span> <span class="${tagClass}">${inc.trigger}</span> (μ=${inc.mu}, θa=${inc.theta_a_deg}°, drag=${inc.trailer_brake})`;
-            term.appendChild(row);
-            term.scrollTop = term.scrollHeight;
-          }
-        });
-      }
-    }
-
-    // --- High-FPS Smooth Animation Loop ---
-    function render() {
-      requestAnimationFrame(render);
-      if (!latestData || !latestData.current) return;
-
-      const c = latestData.current;
-      const trail = latestData.trail || [];
-      const charts = latestData.charts || [];
-
-      // 1. Draw 2D Overhead Track Canvas
-      const w = trackCanvas.width;
-      const h = trackCanvas.height;
-      trackCtx.clearRect(0, 0, w, h);
-
-      // Camera follows vehicle smoothly: Center camera on tractor (c.x, c.y)
-      const scale = 5.5; // pixels per meter
-      const camX = c.x;
-      const camY = c.y;
-
-      trackCtx.save();
-      trackCtx.translate(w / 2, h / 2);
-      trackCtx.scale(scale, scale);
-      trackCtx.translate(-camX, -camY);
-
-      function getRoadY(x) {
-        return 12.0 * Math.sin(0.003 * x) + 5.0 * Math.cos(0.006 * x);
-      }
-
-      // Draw Highway Road Surface
-      const roadHalfWidth = 4.2;
-      trackCtx.beginPath();
-      const startX = camX - 50;
-      const endX = camX + 50;
-
-      // Fill road strip
-      trackCtx.beginPath();
-      for (let x = startX; x <= endX; x += 1.5) {
-        const y_ref = getRoadY(x);
-        if (x === startX) trackCtx.moveTo(x, y_ref - roadHalfWidth);
-        else trackCtx.lineTo(x, y_ref - roadHalfWidth);
-      }
-      for (let x = endX; x >= startX; x -= 1.5) {
-        const y_ref = getRoadY(x);
-        trackCtx.lineTo(x, y_ref + roadHalfWidth);
-      }
-      trackCtx.closePath();
-
-      // Road color depends on weather
-      if (c.weather === 'ice') {
-        trackCtx.fillStyle = '#0f2438';
-      } else if (c.weather === 'rain') {
-        trackCtx.fillStyle = '#111d2e';
+      const clampElem = document.getElementById('lblSteerClamp');
+      if (c.friction_clamped) {
+        clampElem.textContent = `CLAMPED (±${(c.delta_max_deg || 10).toFixed(1)}°)`;
+        clampElem.style.color = 'var(--warning)';
       } else {
-        trackCtx.fillStyle = '#172033';
+        clampElem.textContent = 'Nominal Authority';
+        clampElem.style.color = 'var(--text-muted)';
       }
-      trackCtx.fill();
-      trackCtx.strokeStyle = '#334155';
-      trackCtx.lineWidth = 0.2;
-      trackCtx.stroke();
 
-      // Dashed Centerline
-      trackCtx.beginPath();
-      trackCtx.setLineDash([1.5, 1.5]);
-      trackCtx.strokeStyle = '#94a3b8';
-      trackCtx.lineWidth = 0.18;
-      for (let x = startX; x <= endX; x += 1.5) {
-        const y_ref = getRoadY(x);
-        if (x === startX) trackCtx.moveTo(x, y_ref);
-        else trackCtx.lineTo(x, y_ref);
-      }
-      trackCtx.stroke();
-      trackCtx.setLineDash([]);
+      // HUD updates
+      document.getElementById('hudTrackStatus').textContent = `IN-LANE: e_y = ${eyCm.toFixed(1)} cm`;
+      document.getElementById('hudPsi').textContent = `${(c.psi1_deg || 0).toFixed(1)}°`;
+      document.getElementById('hudSteer').textContent = `${steerDeg.toFixed(1)}°`;
 
-      // Draw Trajectory Trail
-      if (trail.length > 1) {
-        trackCtx.beginPath();
-        trackCtx.moveTo(trail[0].x, trail[0].y);
-        for (let i = 1; i < trail.length; i++) {
-          trackCtx.lineTo(trail[i].x, trail[i].y);
+      document.getElementById('hud3DEy').textContent = `e_y = ${eyCm.toFixed(1)} cm`;
+      document.getElementById('hud3DRollover').textContent = `LTR: ${ltrVal.toFixed(3)}`;
+      document.getElementById('hud3DHitch').textContent = `HITCH θa: ${hitchDeg.toFixed(1)}°`;
+
+      // Chart Readouts
+      document.getElementById('lblCurrentYaw').textContent = `${(c.r1_deg || 0).toFixed(1)}°/s`;
+      document.getElementById('lblCurrentSteer').textContent = `${steerDeg.toFixed(1)}°`;
+
+      // Weather pill
+      const wPill = document.getElementById('weatherPill');
+      wPill.className = `weather-pill weather-${c.weather}`;
+      wPill.textContent = `${c.weather.toUpperCase()} (μ=${(c.mu || 0.85).toFixed(2)})`;
+
+      // Backend status
+      const isMatlab = (data.backend === 'matlab');
+      document.getElementById('btnEnginePython').className = isMatlab ? 'btn-engine' : 'btn-engine active';
+      document.getElementById('btnEngineMatlab').className = isMatlab ? 'btn-engine active-matlab' : 'btn-engine';
+      document.getElementById('matlabControlsStrip').style.display = isMatlab ? 'flex' : 'none';
+      document.getElementById('provingGroundStrip').style.display = isMatlab ? 'grid' : 'none';
+    }
+
+    // =========================================================================
+    // SCENARIOS & ENGINE CONTROLS
+    // =========================================================================
+    async function triggerScenario(eventType) {
+      playTone(520, 'triangle', 0.08, 0.08);
+      try {
+        const resp = await fetch('/api/inject', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ event: eventType })
+        });
+        const res = await resp.json();
+        const term = document.getElementById('terminalConsole');
+        const row = document.createElement('div');
+        row.className = 'terminal-entry';
+        const tagClass = eventType === 'spawn_obstacle' ? 'tag-obs' : 'tag-ok';
+        row.innerHTML = `<span class="ts">[COMMAND]</span> <span class="${tagClass}">${res.message || eventType}</span>`;
+        term.appendChild(row);
+        term.scrollTop = term.scrollHeight;
+      } catch (e) {}
+    }
+
+    async function setSimulationBackend(backend) {
+      playTone(580, 'sine', 0.08, 0.06);
+      try {
+        const resp = await fetch('/api/backend/select', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ backend: backend })
+        });
+        const res = await resp.json();
+        updateUI(latestData);
+      } catch (e) {}
+    }
+
+    function setSpeedPreset(kmh) {
+      const slider = document.getElementById('sliderSpeed');
+      if (slider) slider.value = kmh;
+      document.getElementById('lblSliderVal').textContent = `${kmh} km/h`;
+      document.querySelectorAll('.btn-speed').forEach(b => {
+        b.classList.toggle('active', Number(b.dataset.speed) === Number(kmh));
+      });
+      fetch('/api/speed/set', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ speed_kmh: Number(kmh) })
+      });
+    }
+
+    function onSpeedSliderInput(val) {
+      document.getElementById('lblSliderVal').textContent = `${val} km/h`;
+    }
+
+    function onSpeedSliderChange(val) {
+      setSpeedPreset(val);
+    }
+
+    async function startMatlabSimulation() {
+      playTone(660, 'sine', 0.1, 0.1);
+      const selCtrl = document.getElementById('selMatlabController');
+      const selMiss = document.getElementById('selMatlabMission');
+      const selSpd = document.getElementById('selMatlabSpeed');
+      const ctrl = selCtrl ? selCtrl.value : 'rl';
+      const miss = selMiss ? selMiss.value : 'proving_ground';
+      const spdVal = selSpd ? Number(selSpd.value) : 72.0;
+      const vxVal = spdVal / 3.6;
+
+      try {
+        const resp = await fetch('/api/matlab/start', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ controller: ctrl, mission: miss, speed: 1.0, vx: vxVal })
+        });
+        const res = await resp.json();
+        if (res.status === 'ok') {
+          const term = document.getElementById('terminalConsole');
+          const row = document.createElement('div');
+          row.className = 'terminal-entry';
+          row.innerHTML = `<span class="ts">[MATLAB]</span> <span class="tag-ok">MATLAB ${ctrl.toUpperCase()} Engine started (${spdVal} km/h)</span>`;
+          term.appendChild(row);
         }
-        trackCtx.strokeStyle = 'rgba(6, 182, 212, 0.4)';
-        trackCtx.lineWidth = 0.25;
-        trackCtx.stroke();
-      }
-
-      // Tractor-Trailer Kinematics Dimensions
-      const L_tractor = 5.2;
-      const W_tractor = 2.4;
-      const L_trailer = 12.0;
-      const W_trailer = 2.5;
-      const hitchOffset = 1.2; // kingpin distance behind tractor center
-
-      // 1. Draw 24-Ton Semitrailer (Heading psi2)
-      trackCtx.save();
-      const hitchX = c.x - hitchOffset * Math.cos(c.psi1);
-      const hitchY = c.y - hitchOffset * Math.sin(c.psi1);
-      trackCtx.translate(hitchX, hitchY);
-      trackCtx.rotate(c.psi2);
-
-      // Semitrailer Box
-      trackCtx.fillStyle = '#1e293b';
-      trackCtx.strokeStyle = c.is_rollover_critical ? '#ef4444' : '#38bdf8';
-      trackCtx.lineWidth = 0.15;
-      trackCtx.fillRect(-L_trailer, -W_trailer / 2, L_trailer, W_trailer);
-      trackCtx.strokeRect(-L_trailer, -W_trailer / 2, L_trailer, W_trailer);
-
-      // Trailer Wheels
-      trackCtx.fillStyle = '#0284c7';
-      trackCtx.fillRect(-L_trailer + 1.2, -W_trailer/2 - 0.2, 1.2, 0.2);
-      trackCtx.fillRect(-L_trailer + 1.2, W_trailer/2, 1.2, 0.2);
-      trackCtx.restore();
-
-      // 2. Kingpin Joint Circle
-      trackCtx.beginPath();
-      trackCtx.arc(hitchX, hitchY, 0.35, 0, Math.PI * 2);
-      trackCtx.fillStyle = '#f59e0b';
-      trackCtx.fill();
-
-      // 3. Draw Tractor (Heading psi1)
-      trackCtx.save();
-      trackCtx.translate(c.x, c.y);
-      trackCtx.rotate(c.psi1);
-
-      // Tractor Cab Body
-      trackCtx.fillStyle = '#334155';
-      trackCtx.strokeStyle = c.is_jackknife_critical ? '#ef4444' : '#94a3b8';
-      trackCtx.lineWidth = 0.18;
-      trackCtx.fillRect(-L_tractor / 2, -W_tractor / 2, L_tractor, W_tractor);
-      trackCtx.strokeRect(-L_tractor / 2, -W_tractor / 2, L_tractor, W_tractor);
-
-      // Tractor Windshield Cab
-      trackCtx.fillStyle = '#0f172a';
-      trackCtx.fillRect(0.4, -W_tractor/2 + 0.2, 1.4, W_tractor - 0.4);
-
-      // Front Steerable Wheels (Rotated by steer_safe)
-      const wheelL = 0.9;
-      const wheelW = 0.25;
-      const frontAxleX = L_tractor / 2 - 0.8;
-
-      // Left Front Wheel
-      trackCtx.save();
-      trackCtx.translate(frontAxleX, -W_tractor / 2);
-      trackCtx.rotate(c.steer_safe);
-      trackCtx.fillStyle = '#10b981';
-      trackCtx.fillRect(-wheelL / 2, -wheelW, wheelL, wheelW);
-      trackCtx.restore();
-
-      // Right Front Wheel
-      trackCtx.save();
-      trackCtx.translate(frontAxleX, W_tractor / 2);
-      trackCtx.rotate(c.steer_safe);
-      trackCtx.fillStyle = '#10b981';
-      trackCtx.fillRect(-wheelL / 2, 0, wheelL, wheelW);
-      trackCtx.restore();
-
-      trackCtx.restore(); // restore tractor
-      trackCtx.restore(); // restore camera transform
-
-      // 2. Draw Rolling Strip Charts
-      renderStripChart(chartLtrCanvas, chartLtrCtx, charts, 'ltr', 1.0, 0.6, 0.85);
-      renderStripChart(chartThetaCanvas, chartThetaCtx, charts, 'theta_a', 35.0, 15.0, 25.0);
+      } catch (e) {}
     }
 
-    function renderStripChart(canvas, ctx, data, key, yMax, warnY, critY) {
-      const w = canvas.width;
-      const h = canvas.height;
-      ctx.clearRect(0, 0, w, h);
-      if (!data || data.length < 2) return;
-
-      const padB = 6;
-      const padT = 6;
-      const usableH = h - padB - padT;
-
-      // Threshold lines
-      const yCritPx = h - padB - (critY / yMax) * usableH;
-      ctx.beginPath();
-      ctx.strokeStyle = 'rgba(239, 68, 68, 0.4)';
-      ctx.setLineDash([4, 4]);
-      ctx.moveTo(0, yCritPx);
-      ctx.lineTo(w, yCritPx);
-      ctx.stroke();
-
-      const yWarnPx = h - padB - (warnY / yMax) * usableH;
-      ctx.beginPath();
-      ctx.strokeStyle = 'rgba(245, 158, 11, 0.3)';
-      ctx.moveTo(0, yWarnPx);
-      ctx.lineTo(w, yWarnPx);
-      ctx.stroke();
-      ctx.setLineDash([]);
-
-      // Strip Line
-      ctx.beginPath();
-      const n = data.length;
-      for (let i = 0; i < n; i++) {
-        const pt = data[i];
-        const val = Math.min(yMax, Math.max(0, pt[key]));
-        const xPx = (i / (n - 1)) * w;
-        const yPx = h - padB - (val / yMax) * usableH;
-        if (i === 0) ctx.moveTo(xPx, yPx);
-        else ctx.lineTo(xPx, yPx);
-      }
-      ctx.strokeStyle = key === 'ltr' ? '#10b981' : '#38bdf8';
-      ctx.lineWidth = 2.0;
-      ctx.stroke();
+    async function stopMatlabSimulation() {
+      playTone(420, 'triangle', 0.1, 0.1);
+      try {
+        await fetch('/api/matlab/stop', { method: 'POST' });
+      } catch (e) {}
     }
 
-    // Start Animation Loop
-    render();
+    function onMatlabConfigChange() {
+      const selMiss = document.getElementById('selMatlabMission');
+      const selCtrl = document.getElementById('selMatlabController');
+      if (!selMiss || !selCtrl) return;
+      if (selMiss.value === 'simulink') selCtrl.value = 'simulink';
+      else if (selMiss.value === 'rl_env') selCtrl.value = 'rl';
+    }
+
+    // Keyboard Hotkeys
+    window.addEventListener('keydown', (e) => {
+      if (e.target.tagName === 'INPUT' || e.target.tagName === 'SELECT') return;
+      if (e.key === ' ') { e.preventDefault(); triggerScenario('spawn_obstacle'); }
+      else if (e.key === '1') triggerScenario('dry');
+      else if (e.key === '2') triggerScenario('rain');
+      else if (e.key === '3') triggerScenario('ice');
+      else if (e.key.toLowerCase() === 'v') {
+        const modes = ['chase', 'cockpit', 'orbit'];
+        const nextIdx = (modes.indexOf(threeCameraMode) + 1) % modes.length;
+        set3DCameraMode(modes[nextIdx]);
+      }
+      else if (e.key.toLowerCase() === 'l') toggle3DHeadlights();
+      else if (e.key.toLowerCase() === 's') triggerScenario('swerve');
+      else if (e.key.toLowerCase() === 'r') triggerScenario('reset');
+      else if (e.key.toLowerCase() === 'c') toggleFollowCam(document.getElementById('btnFollowCam'));
+      else if (e.key.toLowerCase() === 'm') toggleAudio();
+      else if (e.key === 'Home') recenterCamera();
+      else if (e.key === '+' || e.key === '=') setZoom(currentScale * 1.25, null);
+      else if (e.key === '-' || e.key === '_') setZoom(currentScale * 0.8, null);
+      else if (e.key === '?') toggleHotkeysModal(true);
+      else if (e.key === 'Escape') toggleHotkeysModal(false);
+    });
+
+    // Start 60 FPS Render Loop
+    requestAnimationFrame(render);
+
+    window.addEventListener('load', () => {
+      resizeCanvases();
+      ensureThreeInitialized();
+    });
   </script>
 </body>
 </html>
